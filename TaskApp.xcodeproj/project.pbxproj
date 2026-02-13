@@ -29,9 +29,22 @@
 		4701ADB62F3F773A00933AB2 /* TaskAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TaskAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		4701ADCF2F3F79EE00933AB2 /* Exceptions for "TaskApp" folder in "TaskApp" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Untitled.swift,
+			);
+			target = 4701AD982F3F773800933AB2 /* TaskApp */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4701AD9B2F3F773800933AB2 /* TaskApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4701ADCF2F3F79EE00933AB2 /* Exceptions for "TaskApp" folder in "TaskApp" target */,
+			);
 			path = TaskApp;
 			sourceTree = "<group>";
 		};
