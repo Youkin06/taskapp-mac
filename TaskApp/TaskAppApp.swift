@@ -6,8 +6,9 @@ struct TaskAppApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .frame(minWidth: 420, minHeight: 520)
         }
+        .windowStyle(.hiddenTitleBar)
         .modelContainer(for: TaskItem.self)
     }
 }
+
