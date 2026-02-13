@@ -33,7 +33,7 @@ struct ContentView: View {
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             List {
-                Section("Captures") {
+                Section {
                     if captureMonitor.items.isEmpty {
                         HStack(spacing: 8) {
                             Circle()
@@ -107,7 +107,7 @@ struct ContentView: View {
                     }
                 }
 
-                Section("Tasks") {
+                Section {
                     ForEach(tasks) { task in
                         HStack(spacing: 10) {
                             Button {
