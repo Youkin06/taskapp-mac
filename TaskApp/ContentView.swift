@@ -22,6 +22,8 @@ struct ContentView: View {
     @FocusState private var focusedTaskID: PersistentIdentifier?
     @State private var activeActions: Set<ActionKey> = []
     @State private var hoveredActions: Set<ActionKey> = []
+    @State private var hoveredTaskDeleteIDs: Set<PersistentIdentifier> = []
+    @State private var isHoveringAddButton = false
 
     private var totalRows: Int {
         tasks.count + screenshotMonitor.items.count
@@ -30,8 +32,17 @@ struct ContentView: View {
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             List {
-                if !screenshotMonitor.items.isEmpty {
-                    Section("Screenshots") {
+                Section("Screenshots") {
+                    if screenshotMonitor.items.isEmpty {
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(.green)
+                                .frame(width: 7, height: 7)
+                            Text("監視中: スクリーンショットを待機しています")
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 4)
+                    } else {
                         ForEach(screenshotMonitor.items) { shot in
                             HStack(spacing: 10) {
                                 Image(nsImage: shot.image)
@@ -54,12 +65,12 @@ struct ContentView: View {
                                     screenshotMonitor.copyToPasteboard(shot)
                                 } label: {
                                     Image(systemName: "doc.on.doc")
-                                        .foregroundStyle(isActionActive(.copy, for: shot) ? .blue : .black)
+                                        .foregroundStyle(actionForegroundColor(.copy, for: shot))
                                         .scaleEffect(actionScale(.copy, for: shot))
                                         .frame(width: 24, height: 24)
                                         .background(
                                             Circle()
-                                                .fill(isActionActive(.copy, for: shot) ? Color.blue.opacity(0.16) : .clear)
+                                                .fill(actionBackgroundColor(.copy, for: shot))
                                         )
                                         .animation(.easeInOut(duration: 0.12), value: actionScale(.copy, for: shot))
                                 }
@@ -73,12 +84,12 @@ struct ContentView: View {
                                     screenshotMonitor.saveToDesktop(shot)
                                 } label: {
                                     Image(systemName: "square.and.arrow.down")
-                                        .foregroundStyle(isActionActive(.save, for: shot) ? .green : .black)
+                                        .foregroundStyle(actionForegroundColor(.save, for: shot))
                                         .scaleEffect(actionScale(.save, for: shot))
                                         .frame(width: 24, height: 24)
                                         .background(
                                             Circle()
-                                                .fill(isActionActive(.save, for: shot) ? Color.green.opacity(0.16) : .clear)
+                                                .fill(actionBackgroundColor(.save, for: shot))
                                         )
                                         .animation(.easeInOut(duration: 0.12), value: actionScale(.save, for: shot))
                                 }
@@ -94,12 +105,12 @@ struct ContentView: View {
                                     }
                                 } label: {
                                     Image(systemName: "trash")
-                                        .foregroundStyle(isActionActive(.delete, for: shot) ? .red : .red.opacity(0.9))
+                                        .foregroundStyle(actionForegroundColor(.delete, for: shot))
                                         .scaleEffect(actionScale(.delete, for: shot))
                                         .frame(width: 24, height: 24)
                                         .background(
                                             Circle()
-                                                .fill(isActionActive(.delete, for: shot) ? Color.red.opacity(0.16) : .clear)
+                                                .fill(actionBackgroundColor(.delete, for: shot))
                                         )
                                         .animation(.easeInOut(duration: 0.12), value: actionScale(.delete, for: shot))
                                 }
@@ -161,9 +172,19 @@ struct ContentView: View {
                                 deleteTask(task)
                             } label: {
                                 Image(systemName: "trash")
-                                    .foregroundStyle(.red)
+                                    .foregroundStyle(isTaskDeleteHovered(task) ? .red : .red.opacity(0.88))
+                                    .scaleEffect(isTaskDeleteHovered(task) ? 1.24 : 1.0)
+                                    .frame(width: 24, height: 24)
+                                    .background(
+                                        Circle()
+                                            .fill(isTaskDeleteHovered(task) ? Color.red.opacity(0.18) : .clear)
+                                    )
+                                    .animation(.easeInOut(duration: 0.12), value: isTaskDeleteHovered(task))
                             }
                             .buttonStyle(.plain)
+                            .onHover { isHovering in
+                                setTaskDeleteHover(isHovering, for: task)
+                            }
                         }
                         .padding(.vertical, 2)
                     }
@@ -178,12 +199,20 @@ struct ContentView: View {
             } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(.black)
+                    .foregroundStyle(isHoveringAddButton ? .blue : .black)
                     .frame(width: 36, height: 36)
-                    .background(Circle().fill(.white))
+                    .background(
+                        Circle()
+                            .fill(isHoveringAddButton ? Color.blue.opacity(0.2) : .white)
+                    )
+                    .scaleEffect(isHoveringAddButton ? 1.22 : 1.0)
                     .shadow(radius: 2, y: 1)
+                    .animation(.easeInOut(duration: 0.12), value: isHoveringAddButton)
             }
             .buttonStyle(.plain)
+            .onHover { isHovering in
+                isHoveringAddButton = isHovering
+            }
             .padding(12)
         }
         .background(.clear)
@@ -246,9 +275,65 @@ struct ContentView: View {
             return 1.16
         }
         if hoveredActions.contains(ActionKey(shotID: shot.id, action: action)) {
-            return 1.09
+            return 1.24
         }
         return 1.0
+    }
+
+    private func isActionHovered(_ action: ScreenshotAction, for shot: ScreenshotEntry) -> Bool {
+        hoveredActions.contains(ActionKey(shotID: shot.id, action: action))
+    }
+
+    private func actionForegroundColor(_ action: ScreenshotAction, for shot: ScreenshotEntry) -> Color {
+        if isActionActive(action, for: shot) {
+            switch action {
+            case .copy: return .blue
+            case .save: return .green
+            case .delete: return .red
+            }
+        }
+        if isActionHovered(action, for: shot) {
+            switch action {
+            case .copy: return .blue
+            case .save: return .green
+            case .delete: return .red
+            }
+        }
+        if action == .delete {
+            return .red.opacity(0.9)
+        }
+        return .black
+    }
+
+    private func actionBackgroundColor(_ action: ScreenshotAction, for shot: ScreenshotEntry) -> Color {
+        if isActionActive(action, for: shot) {
+            switch action {
+            case .copy: return Color.blue.opacity(0.16)
+            case .save: return Color.green.opacity(0.16)
+            case .delete: return Color.red.opacity(0.16)
+            }
+        }
+        if isActionHovered(action, for: shot) {
+            switch action {
+            case .copy: return Color.blue.opacity(0.12)
+            case .save: return Color.green.opacity(0.12)
+            case .delete: return Color.red.opacity(0.12)
+            }
+        }
+        return .clear
+    }
+
+    private func isTaskDeleteHovered(_ task: TaskItem) -> Bool {
+        hoveredTaskDeleteIDs.contains(task.persistentModelID)
+    }
+
+    private func setTaskDeleteHover(_ isHovering: Bool, for task: TaskItem) {
+        let id = task.persistentModelID
+        if isHovering {
+            _ = hoveredTaskDeleteIDs.insert(id)
+        } else {
+            _ = hoveredTaskDeleteIDs.remove(id)
+        }
     }
 }
 
@@ -397,6 +482,7 @@ final class ScreenshotMonitor: ObservableObject {
 
         let created = (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date()
         items.insert(ScreenshotEntry(image: image, sourcePath: url.path, fileDate: created), at: 0)
+        bringAppToFront()
 
         // Finderに残さない
         try? fm.removeItem(at: url)
@@ -410,7 +496,11 @@ final class ScreenshotMonitor: ObservableObject {
         let looksLikeScreenshot =
             name.contains("screenshot") ||
             name.contains("screen shot") ||
-            name.contains("スクリーンショット")
+            name.contains("screen") ||
+            name.contains("capture") ||
+            name.contains("スクリーンショット") ||
+            name.contains("スクリーン") ||
+            name.contains("画面")
 
         return isImage && looksLikeScreenshot
     }
@@ -424,6 +514,20 @@ final class ScreenshotMonitor: ObservableObject {
                 return candidate
             }
             index += 1
+        }
+    }
+
+    private func bringAppToFront() {
+        let app = NSRunningApplication.current
+        app.activate(options: [.activateAllWindows])
+        NSApp.activate(ignoringOtherApps: true)
+
+        for window in NSApp.windows {
+            if window.isMiniaturized {
+                window.deminiaturize(nil)
+            }
+            window.makeKeyAndOrderFront(nil)
+            window.orderFrontRegardless()
         }
     }
 }
