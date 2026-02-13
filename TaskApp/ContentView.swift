@@ -24,16 +24,34 @@ struct ContentView: View {
                         .buttonStyle(.plain)
 
                         if editingTaskID == task.persistentModelID {
-                            TextField("タスク名", text: Binding(
-                                get: { task.title },
-                                set: { task.title = $0 }
-                            ))
-                            .focused($focusedTaskID, equals: task.persistentModelID)
-                            .onSubmit { finishEditing(task) }
+                            ZStack(alignment: .leading) {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.white)
+
+                                TextField(
+                                    "",
+                                    text: Binding(
+                                        get: { task.title },
+                                        set: { task.title = $0 }
+                                    ),
+                                    prompt: Text("タスク名").foregroundColor(.white.opacity(0.7))
+                                )
+                                .textFieldStyle(.plain)
+                                .foregroundColor(.white)   // 入力文字を白
+                                .tint(.white)              // カーソル色を白
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 6)
+                                .focused($focusedTaskID, equals: task.persistentModelID)
+                                .onSubmit { finishEditing(task) }
+                            }
+                            .frame(minHeight: 30)
                         } else {
                             Text(task.title.isEmpty ? "無題タスク" : task.title)
-                                .strikethrough(task.isDone)
-                                .foregroundStyle(task.isDone ? .secondary : .primary)
+                                .foregroundStyle(.black)
+                                .padding(.vertical, 4)
+                                .padding(.horizontal, 8)
+                                .background(Color.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
                                 .onTapGesture {
                                     editingTaskID = task.persistentModelID
                                     focusedTaskID = task.persistentModelID
@@ -122,13 +140,10 @@ private struct WindowConfigurator: NSViewRepresentable {
             let rowHeight: CGFloat = 36
             let baseHeight: CGFloat = 44
             let targetHeight = max(110, min(460, CGFloat(taskCount) * rowHeight + baseHeight))
-            let targetWidth: CGFloat = 360
 
-            if let screen = window.screen ?? NSScreen.main {
-                let visible = screen.visibleFrame
-                let x = visible.midX - targetWidth / 2
-                let y = visible.minY + 20
-                let frame = NSRect(x: x, y: y, width: targetWidth, height: targetHeight)
+            var frame = window.frame
+            if abs(frame.height - targetHeight) > 0.5 {
+                frame.size.height = targetHeight
                 window.setFrame(frame, display: true, animate: true)
             }
         }
