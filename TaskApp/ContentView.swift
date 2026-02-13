@@ -3,12 +3,25 @@ import SwiftData
 import AppKit
 
 struct ContentView: View {
+    private enum ScreenshotAction: Hashable {
+        case copy
+        case save
+        case delete
+    }
+
+    private struct ActionKey: Hashable {
+        let shotID: UUID
+        let action: ScreenshotAction
+    }
+
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \TaskItem.createdAt, order: .reverse) private var tasks: [TaskItem]
 
     @StateObject private var screenshotMonitor = ScreenshotMonitor()
     @State private var editingTaskID: PersistentIdentifier?
     @FocusState private var focusedTaskID: PersistentIdentifier?
+    @State private var activeActions: Set<ActionKey> = []
+    @State private var hoveredActions: Set<ActionKey> = []
 
     private var totalRows: Int {
         tasks.count + screenshotMonitor.items.count
@@ -37,28 +50,63 @@ struct ContentView: View {
                                 Spacer()
 
                                 Button {
+                                    flashAction(.copy, for: shot)
                                     screenshotMonitor.copyToPasteboard(shot)
                                 } label: {
                                     Image(systemName: "doc.on.doc")
-                                        .foregroundStyle(.black)
+                                        .foregroundStyle(isActionActive(.copy, for: shot) ? .blue : .black)
+                                        .scaleEffect(actionScale(.copy, for: shot))
+                                        .frame(width: 24, height: 24)
+                                        .background(
+                                            Circle()
+                                                .fill(isActionActive(.copy, for: shot) ? Color.blue.opacity(0.16) : .clear)
+                                        )
+                                        .animation(.easeInOut(duration: 0.12), value: actionScale(.copy, for: shot))
                                 }
                                 .buttonStyle(.plain)
+                                .onHover { isHovering in
+                                    setHovering(isHovering, action: .copy, for: shot)
+                                }
 
                                 Button {
+                                    flashAction(.save, for: shot)
                                     screenshotMonitor.saveToDesktop(shot)
                                 } label: {
                                     Image(systemName: "square.and.arrow.down")
-                                        .foregroundStyle(.black)
+                                        .foregroundStyle(isActionActive(.save, for: shot) ? .green : .black)
+                                        .scaleEffect(actionScale(.save, for: shot))
+                                        .frame(width: 24, height: 24)
+                                        .background(
+                                            Circle()
+                                                .fill(isActionActive(.save, for: shot) ? Color.green.opacity(0.16) : .clear)
+                                        )
+                                        .animation(.easeInOut(duration: 0.12), value: actionScale(.save, for: shot))
                                 }
                                 .buttonStyle(.plain)
+                                .onHover { isHovering in
+                                    setHovering(isHovering, action: .save, for: shot)
+                                }
 
                                 Button(role: .destructive) {
-                                    screenshotMonitor.remove(shot)
+                                    flashAction(.delete, for: shot)
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                                        screenshotMonitor.remove(shot)
+                                    }
                                 } label: {
                                     Image(systemName: "trash")
-                                        .foregroundStyle(.red)
+                                        .foregroundStyle(isActionActive(.delete, for: shot) ? .red : .red.opacity(0.9))
+                                        .scaleEffect(actionScale(.delete, for: shot))
+                                        .frame(width: 24, height: 24)
+                                        .background(
+                                            Circle()
+                                                .fill(isActionActive(.delete, for: shot) ? Color.red.opacity(0.16) : .clear)
+                                        )
+                                        .animation(.easeInOut(duration: 0.12), value: actionScale(.delete, for: shot))
                                 }
                                 .buttonStyle(.plain)
+                                .onHover { isHovering in
+                                    setHovering(isHovering, action: .delete, for: shot)
+                                }
                             }
                             .padding(.vertical, 2)
                         }
@@ -166,6 +214,41 @@ struct ContentView: View {
     private func deleteTask(_ task: TaskItem) {
         modelContext.delete(task)
         try? modelContext.save()
+    }
+
+    private func isActionActive(_ action: ScreenshotAction, for shot: ScreenshotEntry) -> Bool {
+        activeActions.contains(ActionKey(shotID: shot.id, action: action))
+    }
+
+    private func flashAction(_ action: ScreenshotAction, for shot: ScreenshotEntry) {
+        let key = ActionKey(shotID: shot.id, action: action)
+        withAnimation(.easeIn(duration: 0.06)) {
+            _ = activeActions.insert(key)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            withAnimation(.easeOut(duration: 0.12)) {
+                _ = activeActions.remove(key)
+            }
+        }
+    }
+
+    private func setHovering(_ isHovering: Bool, action: ScreenshotAction, for shot: ScreenshotEntry) {
+        let key = ActionKey(shotID: shot.id, action: action)
+        if isHovering {
+            _ = hoveredActions.insert(key)
+        } else {
+            _ = hoveredActions.remove(key)
+        }
+    }
+
+    private func actionScale(_ action: ScreenshotAction, for shot: ScreenshotEntry) -> CGFloat {
+        if isActionActive(action, for: shot) {
+            return 1.16
+        }
+        if hoveredActions.contains(ActionKey(shotID: shot.id, action: action)) {
+            return 1.09
+        }
+        return 1.0
     }
 }
 
