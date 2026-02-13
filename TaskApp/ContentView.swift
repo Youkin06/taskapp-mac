@@ -44,6 +44,14 @@ struct ContentView: View {
                                 }
                                 .buttonStyle(.plain)
 
+                                Button {
+                                    screenshotMonitor.saveToDesktop(shot)
+                                } label: {
+                                    Image(systemName: "square.and.arrow.down")
+                                        .foregroundStyle(.black)
+                                }
+                                .buttonStyle(.plain)
+
                                 Button(role: .destructive) {
                                     screenshotMonitor.remove(shot)
                                 } label: {
@@ -79,7 +87,7 @@ struct ContentView: View {
                                         set: { task.title = $0 }
                                     ))
                                     .textFieldStyle(.plain)
-                                    .foregroundStyle(.black)
+                                    .foregroundStyle(.white)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 6)
                                     .focused($focusedTaskID, equals: task.persistentModelID)
@@ -224,6 +232,20 @@ final class ScreenshotMonitor: ObservableObject {
         _ = pb.writeObjects([item.image])
     }
 
+    func saveToDesktop(_ item: ScreenshotEntry) {
+        guard
+            let tiff = item.image.tiffRepresentation,
+            let bitmap = NSBitmapImageRep(data: tiff),
+            let pngData = bitmap.representation(using: .png, properties: [:])
+        else { return }
+
+        let desktop = fm.urls(for: .desktopDirectory, in: .userDomainMask).first!
+        let baseName = URL(fileURLWithPath: item.sourcePath).deletingPathExtension().lastPathComponent
+        let fileBase = baseName.isEmpty ? "Screenshot" : baseName
+        let targetURL = uniqueDesktopURL(in: desktop, baseName: fileBase, ext: "png")
+        try? pngData.write(to: targetURL, options: .atomic)
+    }
+
     private func start() {
         timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
             Task { @MainActor in
@@ -309,5 +331,16 @@ final class ScreenshotMonitor: ObservableObject {
 
         return isImage && looksLikeScreenshot
     }
-}
 
+    private func uniqueDesktopURL(in directory: URL, baseName: String, ext: String) -> URL {
+        var index = 0
+        while true {
+            let suffix = index == 0 ? "" : " \(index)"
+            let candidate = directory.appendingPathComponent("\(baseName)\(suffix)").appendingPathExtension(ext)
+            if !fm.fileExists(atPath: candidate.path) {
+                return candidate
+            }
+            index += 1
+        }
+    }
+}
