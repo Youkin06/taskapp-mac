@@ -4,8 +4,10 @@ import AppKit
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Dockに出さず、メニューバー常駐アプリにする
-        NSApp.setActivationPolicy(.accessory)
+        NSApp.setActivationPolicy(.regular)
+        if let image = NSImage(named: "RuntimeIcon") {
+            NSApp.applicationIconImage = image
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
