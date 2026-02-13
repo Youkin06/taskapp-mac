@@ -1,0 +1,40 @@
+{
+  "source": "/Users/yohei/Desktop/TaskApp/TaskApp/TaskApp/TaskAppApp.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "TaskApp",
+        "location": {
+          "startingColumn": 16,
+          "startingLine": 25
+        }
+      },
+      {
+        "comment": "",
+        "key": "TaskApp",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 32
+        }
+      },
+      {
+        "comment": "",
+        "key": "開く",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 33
+        }
+      },
+      {
+        "comment": "",
+        "key": "終了",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 40
+        }
+      }
+    ]
+  },
+  "version": 1
+}

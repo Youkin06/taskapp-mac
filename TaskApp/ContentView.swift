@@ -1,57 +1,54 @@
 import SwiftUI
 import SwiftData
 import AppKit
+import AVFoundation
 
 struct ContentView: View {
-    private enum ScreenshotAction: Hashable {
+    private enum CaptureAction: Hashable {
         case copy
         case save
         case delete
     }
 
-    private struct ActionKey: Hashable {
-        let shotID: UUID
-        let action: ScreenshotAction
+    private struct CaptureActionKey: Hashable {
+        let itemID: UUID
+        let action: CaptureAction
     }
 
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \TaskItem.createdAt, order: .reverse) private var tasks: [TaskItem]
 
-    @StateObject private var screenshotMonitor = ScreenshotMonitor()
+    @StateObject private var captureMonitor = CaptureMonitor()
     @State private var editingTaskID: PersistentIdentifier?
     @FocusState private var focusedTaskID: PersistentIdentifier?
-    @State private var activeActions: Set<ActionKey> = []
-    @State private var hoveredActions: Set<ActionKey> = []
+
+    @State private var hoveredCaptureActions: Set<CaptureActionKey> = []
     @State private var hoveredTaskDeleteIDs: Set<PersistentIdentifier> = []
     @State private var isHoveringAddButton = false
 
     private var totalRows: Int {
-        tasks.count + screenshotMonitor.items.count
+        tasks.count + captureMonitor.items.count
     }
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             List {
-                Section("Screenshots") {
-                    if screenshotMonitor.items.isEmpty {
+                Section("Captures") {
+                    if captureMonitor.items.isEmpty {
                         HStack(spacing: 8) {
                             Circle()
                                 .fill(.green)
                                 .frame(width: 7, height: 7)
-                            Text("監視中: スクリーンショットを待機しています")
+                            Text("監視中: スクリーンショット / 録画を待機")
                                 .foregroundStyle(.secondary)
                         }
                         .padding(.vertical, 4)
                     } else {
-                        ForEach(screenshotMonitor.items) { shot in
+                        ForEach(captureMonitor.items) { item in
                             HStack(spacing: 10) {
-                                Image(nsImage: shot.image)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 92, height: 56)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                previewView(for: item)
 
-                                Text("コピー済み")
+                                Text(item.kind == .video ? "動画を一時保存中" : "画像をコピー済み")
                                     .foregroundStyle(.black)
                                     .padding(.vertical, 4)
                                     .padding(.horizontal, 8)
@@ -61,62 +58,48 @@ struct ContentView: View {
                                 Spacer()
 
                                 Button {
-                                    flashAction(.copy, for: shot)
-                                    screenshotMonitor.copyToPasteboard(shot)
+                                    captureMonitor.copyToPasteboard(item)
                                 } label: {
                                     Image(systemName: "doc.on.doc")
-                                        .foregroundStyle(actionForegroundColor(.copy, for: shot))
-                                        .scaleEffect(actionScale(.copy, for: shot))
+                                        .foregroundStyle(captureActionForeground(.copy, for: item))
+                                        .scaleEffect(captureActionScale(.copy, for: item))
                                         .frame(width: 24, height: 24)
-                                        .background(
-                                            Circle()
-                                                .fill(actionBackgroundColor(.copy, for: shot))
-                                        )
-                                        .animation(.easeInOut(duration: 0.12), value: actionScale(.copy, for: shot))
+                                        .background(Circle().fill(captureActionBackground(.copy, for: item)))
+                                        .animation(.easeInOut(duration: 0.12), value: captureActionScale(.copy, for: item))
                                 }
                                 .buttonStyle(.plain)
-                                .onHover { isHovering in
-                                    setHovering(isHovering, action: .copy, for: shot)
+                                .onHover { hovering in
+                                    setCaptureHover(hovering, action: .copy, for: item)
                                 }
 
                                 Button {
-                                    flashAction(.save, for: shot)
-                                    screenshotMonitor.saveToDesktop(shot)
+                                    captureMonitor.saveToDesktop(item)
                                 } label: {
                                     Image(systemName: "square.and.arrow.down")
-                                        .foregroundStyle(actionForegroundColor(.save, for: shot))
-                                        .scaleEffect(actionScale(.save, for: shot))
+                                        .foregroundStyle(captureActionForeground(.save, for: item))
+                                        .scaleEffect(captureActionScale(.save, for: item))
                                         .frame(width: 24, height: 24)
-                                        .background(
-                                            Circle()
-                                                .fill(actionBackgroundColor(.save, for: shot))
-                                        )
-                                        .animation(.easeInOut(duration: 0.12), value: actionScale(.save, for: shot))
+                                        .background(Circle().fill(captureActionBackground(.save, for: item)))
+                                        .animation(.easeInOut(duration: 0.12), value: captureActionScale(.save, for: item))
                                 }
                                 .buttonStyle(.plain)
-                                .onHover { isHovering in
-                                    setHovering(isHovering, action: .save, for: shot)
+                                .onHover { hovering in
+                                    setCaptureHover(hovering, action: .save, for: item)
                                 }
 
-                                Button(role: .destructive) {
-                                    flashAction(.delete, for: shot)
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-                                        screenshotMonitor.remove(shot)
-                                    }
+                                Button {
+                                    captureMonitor.remove(item)
                                 } label: {
                                     Image(systemName: "trash")
-                                        .foregroundStyle(actionForegroundColor(.delete, for: shot))
-                                        .scaleEffect(actionScale(.delete, for: shot))
+                                        .foregroundStyle(captureActionForeground(.delete, for: item))
+                                        .scaleEffect(captureActionScale(.delete, for: item))
                                         .frame(width: 24, height: 24)
-                                        .background(
-                                            Circle()
-                                                .fill(actionBackgroundColor(.delete, for: shot))
-                                        )
-                                        .animation(.easeInOut(duration: 0.12), value: actionScale(.delete, for: shot))
+                                        .background(Circle().fill(captureActionBackground(.delete, for: item)))
+                                        .animation(.easeInOut(duration: 0.12), value: captureActionScale(.delete, for: item))
                                 }
                                 .buttonStyle(.plain)
-                                .onHover { isHovering in
-                                    setHovering(isHovering, action: .delete, for: shot)
+                                .onHover { hovering in
+                                    setCaptureHover(hovering, action: .delete, for: item)
                                 }
                             }
                             .padding(.vertical, 2)
@@ -146,7 +129,7 @@ struct ContentView: View {
                                         set: { task.title = $0 }
                                     ))
                                     .textFieldStyle(.plain)
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(.black)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 6)
                                     .focused($focusedTaskID, equals: task.persistentModelID)
@@ -168,22 +151,22 @@ struct ContentView: View {
 
                             Spacer()
 
-                            Button(role: .destructive) {
+                            Button {
                                 deleteTask(task)
                             } label: {
                                 Image(systemName: "trash")
                                     .foregroundStyle(isTaskDeleteHovered(task) ? .red : .red.opacity(0.88))
-                                    .scaleEffect(isTaskDeleteHovered(task) ? 1.24 : 1.0)
+                                    .scaleEffect(isTaskDeleteHovered(task) ? 1.22 : 1.0)
                                     .frame(width: 24, height: 24)
                                     .background(
                                         Circle()
-                                            .fill(isTaskDeleteHovered(task) ? Color.red.opacity(0.18) : .clear)
+                                            .fill(isTaskDeleteHovered(task) ? Color.red.opacity(0.16) : .clear)
                                     )
                                     .animation(.easeInOut(duration: 0.12), value: isTaskDeleteHovered(task))
                             }
                             .buttonStyle(.plain)
-                            .onHover { isHovering in
-                                setTaskDeleteHover(isHovering, for: task)
+                            .onHover { hovering in
+                                setTaskDeleteHover(hovering, for: task)
                             }
                         }
                         .padding(.vertical, 2)
@@ -201,22 +184,38 @@ struct ContentView: View {
                     .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(isHoveringAddButton ? .blue : .black)
                     .frame(width: 36, height: 36)
-                    .background(
-                        Circle()
-                            .fill(isHoveringAddButton ? Color.blue.opacity(0.2) : .white)
-                    )
+                    .background(Circle().fill(isHoveringAddButton ? Color.blue.opacity(0.2) : .white))
                     .scaleEffect(isHoveringAddButton ? 1.22 : 1.0)
                     .shadow(radius: 2, y: 1)
                     .animation(.easeInOut(duration: 0.12), value: isHoveringAddButton)
             }
             .buttonStyle(.plain)
-            .onHover { isHovering in
-                isHoveringAddButton = isHovering
+            .onHover { hovering in
+                isHoveringAddButton = hovering
             }
             .padding(12)
         }
         .background(.clear)
         .background(WindowConfigurator(totalRows: totalRows))
+    }
+
+    @ViewBuilder
+    private func previewView(for item: CaptureItem) -> some View {
+        if let image = item.thumbnail {
+            Image(nsImage: image)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 92, height: 56)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+        } else if item.kind == .video {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.black.opacity(0.15))
+                Image(systemName: "video.fill")
+                    .foregroundStyle(.black.opacity(0.8))
+            }
+            .frame(width: 92, height: 56)
+        }
     }
 
     private func addTaskAndStartEditing() {
@@ -245,91 +244,54 @@ struct ContentView: View {
         try? modelContext.save()
     }
 
-    private func isActionActive(_ action: ScreenshotAction, for shot: ScreenshotEntry) -> Bool {
-        activeActions.contains(ActionKey(shotID: shot.id, action: action))
-    }
-
-    private func flashAction(_ action: ScreenshotAction, for shot: ScreenshotEntry) {
-        let key = ActionKey(shotID: shot.id, action: action)
-        withAnimation(.easeIn(duration: 0.06)) {
-            _ = activeActions.insert(key)
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            withAnimation(.easeOut(duration: 0.12)) {
-                _ = activeActions.remove(key)
-            }
-        }
-    }
-
-    private func setHovering(_ isHovering: Bool, action: ScreenshotAction, for shot: ScreenshotEntry) {
-        let key = ActionKey(shotID: shot.id, action: action)
-        if isHovering {
-            _ = hoveredActions.insert(key)
+    private func setCaptureHover(_ hovering: Bool, action: CaptureAction, for item: CaptureItem) {
+        let key = CaptureActionKey(itemID: item.id, action: action)
+        if hovering {
+            _ = hoveredCaptureActions.insert(key)
         } else {
-            _ = hoveredActions.remove(key)
+            _ = hoveredCaptureActions.remove(key)
         }
     }
 
-    private func actionScale(_ action: ScreenshotAction, for shot: ScreenshotEntry) -> CGFloat {
-        if isActionActive(action, for: shot) {
-            return 1.16
-        }
-        if hoveredActions.contains(ActionKey(shotID: shot.id, action: action)) {
-            return 1.24
-        }
-        return 1.0
+    private func isCaptureHovering(_ action: CaptureAction, for item: CaptureItem) -> Bool {
+        hoveredCaptureActions.contains(CaptureActionKey(itemID: item.id, action: action))
     }
 
-    private func isActionHovered(_ action: ScreenshotAction, for shot: ScreenshotEntry) -> Bool {
-        hoveredActions.contains(ActionKey(shotID: shot.id, action: action))
+    private func captureActionScale(_ action: CaptureAction, for item: CaptureItem) -> CGFloat {
+        isCaptureHovering(action, for: item) ? 1.22 : 1.0
     }
 
-    private func actionForegroundColor(_ action: ScreenshotAction, for shot: ScreenshotEntry) -> Color {
-        if isActionActive(action, for: shot) {
+    private func captureActionForeground(_ action: CaptureAction, for item: CaptureItem) -> Color {
+        if isCaptureHovering(action, for: item) {
             switch action {
             case .copy: return .blue
             case .save: return .green
             case .delete: return .red
             }
         }
-        if isActionHovered(action, for: shot) {
-            switch action {
-            case .copy: return .blue
-            case .save: return .green
-            case .delete: return .red
-            }
-        }
+
         if action == .delete {
-            return .red.opacity(0.9)
+            return .red.opacity(0.88)
         }
         return .black
     }
 
-    private func actionBackgroundColor(_ action: ScreenshotAction, for shot: ScreenshotEntry) -> Color {
-        if isActionActive(action, for: shot) {
-            switch action {
-            case .copy: return Color.blue.opacity(0.16)
-            case .save: return Color.green.opacity(0.16)
-            case .delete: return Color.red.opacity(0.16)
-            }
+    private func captureActionBackground(_ action: CaptureAction, for item: CaptureItem) -> Color {
+        guard isCaptureHovering(action, for: item) else { return .clear }
+        switch action {
+        case .copy: return Color.blue.opacity(0.12)
+        case .save: return Color.green.opacity(0.12)
+        case .delete: return Color.red.opacity(0.12)
         }
-        if isActionHovered(action, for: shot) {
-            switch action {
-            case .copy: return Color.blue.opacity(0.12)
-            case .save: return Color.green.opacity(0.12)
-            case .delete: return Color.red.opacity(0.12)
-            }
-        }
-        return .clear
     }
 
     private func isTaskDeleteHovered(_ task: TaskItem) -> Bool {
         hoveredTaskDeleteIDs.contains(task.persistentModelID)
     }
 
-    private func setTaskDeleteHover(_ isHovering: Bool, for task: TaskItem) {
+    private func setTaskDeleteHover(_ hovering: Bool, for task: TaskItem) {
         let id = task.persistentModelID
-        if isHovering {
+        if hovering {
             _ = hoveredTaskDeleteIDs.insert(id)
         } else {
             _ = hoveredTaskDeleteIDs.remove(id)
@@ -366,22 +328,34 @@ private struct WindowConfigurator: NSViewRepresentable {
     }
 }
 
-struct ScreenshotEntry: Identifiable {
+enum CaptureKind {
+    case image
+    case video
+}
+
+struct CaptureItem: Identifiable {
     let id = UUID()
-    let image: NSImage
+    let kind: CaptureKind
     let sourcePath: String
     let fileDate: Date
+    let thumbnail: NSImage?
+    let stagedURL: URL?
 }
 
 @MainActor
-final class ScreenshotMonitor: ObservableObject {
-    @Published var items: [ScreenshotEntry] = []
+final class CaptureMonitor: ObservableObject {
+    @Published var items: [CaptureItem] = []
 
     private var processedPaths: Set<String> = []
     private var timer: Timer?
     private let fm = FileManager.default
+    private let stagingDirectory: URL
 
     init() {
+        let base = fm.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        stagingDirectory = base.appendingPathComponent("TaskAppCaptureStaging", isDirectory: true)
+        try? fm.createDirectory(at: stagingDirectory, withIntermediateDirectories: true)
+
         seedExisting()
         start()
     }
@@ -390,28 +364,54 @@ final class ScreenshotMonitor: ObservableObject {
         timer?.invalidate()
     }
 
-    func remove(_ item: ScreenshotEntry) {
+    func remove(_ item: CaptureItem) {
+        if let stagedURL = item.stagedURL {
+            try? fm.removeItem(at: stagedURL)
+        }
         items.removeAll { $0.id == item.id }
     }
 
-    func copyToPasteboard(_ item: ScreenshotEntry) {
+    func copyToPasteboard(_ item: CaptureItem) {
         let pb = NSPasteboard.general
         pb.clearContents()
-        _ = pb.writeObjects([item.image])
+
+        switch item.kind {
+        case .image:
+            if let image = item.thumbnail {
+                _ = pb.writeObjects([image])
+            }
+        case .video:
+            if let url = item.stagedURL {
+                _ = pb.writeObjects([url as NSURL])
+            }
+        }
     }
 
-    func saveToDesktop(_ item: ScreenshotEntry) {
-        guard
-            let tiff = item.image.tiffRepresentation,
-            let bitmap = NSBitmapImageRep(data: tiff),
-            let pngData = bitmap.representation(using: .png, properties: [:])
-        else { return }
-
+    func saveToDesktop(_ item: CaptureItem) {
         let desktop = fm.urls(for: .desktopDirectory, in: .userDomainMask).first!
-        let baseName = URL(fileURLWithPath: item.sourcePath).deletingPathExtension().lastPathComponent
-        let fileBase = baseName.isEmpty ? "Screenshot" : baseName
-        let targetURL = uniqueDesktopURL(in: desktop, baseName: fileBase, ext: "png")
-        try? pngData.write(to: targetURL, options: .atomic)
+
+        switch item.kind {
+        case .image:
+            guard
+                let image = item.thumbnail,
+                let tiff = image.tiffRepresentation,
+                let bitmap = NSBitmapImageRep(data: tiff),
+                let pngData = bitmap.representation(using: .png, properties: [:])
+            else { return }
+
+            let base = URL(fileURLWithPath: item.sourcePath).deletingPathExtension().lastPathComponent
+            let name = base.isEmpty ? "Screenshot" : base
+            let target = uniqueURL(in: desktop, baseName: name, ext: "png")
+            try? pngData.write(to: target, options: .atomic)
+
+        case .video:
+            guard let stagedURL = item.stagedURL else { return }
+            let base = URL(fileURLWithPath: item.sourcePath).deletingPathExtension().lastPathComponent
+            let ext = stagedURL.pathExtension.isEmpty ? "mov" : stagedURL.pathExtension
+            let name = base.isEmpty ? "Screen Recording" : base
+            let target = uniqueURL(in: desktop, baseName: name, ext: ext)
+            try? fm.copyItem(at: stagedURL, to: target)
+        }
     }
 
     private func start() {
@@ -423,8 +423,7 @@ final class ScreenshotMonitor: ObservableObject {
         timer?.tolerance = 0.1
     }
 
-    private func screenshotDirectory() -> URL {
-        // macOS screenshot save location (defaults domain)
+    private func captureDirectory() -> URL {
         if let raw = UserDefaults.standard.persistentDomain(forName: "com.apple.screencapture")?["location"] as? String {
             let expanded = NSString(string: raw).expandingTildeInPath
             return URL(fileURLWithPath: expanded, isDirectory: true)
@@ -433,15 +432,15 @@ final class ScreenshotMonitor: ObservableObject {
     }
 
     private func seedExisting() {
-        let dir = screenshotDirectory()
+        let dir = captureDirectory()
         guard let urls = try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil) else { return }
-        for url in urls where isScreenshot(url) {
+        for url in urls where isCaptureFile(url) {
             processedPaths.insert(url.path)
         }
     }
 
     private func scan() {
-        let dir = screenshotDirectory()
+        let dir = captureDirectory()
 
         guard let urls = try? fm.contentsOfDirectory(
             at: dir,
@@ -450,7 +449,7 @@ final class ScreenshotMonitor: ObservableObject {
         ) else { return }
 
         let candidates = urls
-            .filter { isScreenshot($0) && !processedPaths.contains($0.path) }
+            .filter { isCaptureFile($0) && !processedPaths.contains($0.path) }
             .sorted { lhs, rhs in
                 let l = (try? lhs.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
                 let r = (try? rhs.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
@@ -463,9 +462,23 @@ final class ScreenshotMonitor: ObservableObject {
     }
 
     private func process(url: URL) {
-        // 書き込み途中対策で数回リトライ
+        let ext = url.pathExtension.lowercased()
+        let created = (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date()
+
+        if isImageExt(ext) {
+            processImage(url: url, created: created)
+            return
+        }
+
+        if isVideoExt(ext) {
+            processVideo(url: url, created: created)
+            return
+        }
+    }
+
+    private func processImage(url: URL, created: Date) {
         var image: NSImage?
-        for _ in 0..<6 {
+        for _ in 0..<8 {
             if let data = try? Data(contentsOf: url), let loaded = NSImage(data: data) {
                 image = loaded
                 break
@@ -480,32 +493,107 @@ final class ScreenshotMonitor: ObservableObject {
         pb.clearContents()
         _ = pb.writeObjects([image])
 
-        let created = (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date()
-        items.insert(ScreenshotEntry(image: image, sourcePath: url.path, fileDate: created), at: 0)
-        bringAppToFront()
+        items.insert(
+            CaptureItem(
+                kind: .image,
+                sourcePath: url.path,
+                fileDate: created,
+                thumbnail: image,
+                stagedURL: nil
+            ),
+            at: 0
+        )
 
-        // Finderに残さない
         try? fm.removeItem(at: url)
+        bringAppToFront()
     }
 
-    private func isScreenshot(_ url: URL) -> Bool {
+    private func processVideo(url: URL, created: Date) {
+        var data: Data?
+        for _ in 0..<10 {
+            if let loaded = try? Data(contentsOf: url), !loaded.isEmpty {
+                data = loaded
+                break
+            }
+            Thread.sleep(forTimeInterval: 0.12)
+        }
+        guard let data else { return }
+
+        processedPaths.insert(url.path)
+
+        let stagedURL = stagingDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension(url.pathExtension)
+
+        do {
+            try data.write(to: stagedURL, options: .atomic)
+        } catch {
+            return
+        }
+
+        let thumbnail = makeVideoThumbnail(from: stagedURL)
+
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        _ = pb.writeObjects([stagedURL as NSURL])
+
+        items.insert(
+            CaptureItem(
+                kind: .video,
+                sourcePath: url.path,
+                fileDate: created,
+                thumbnail: thumbnail,
+                stagedURL: stagedURL
+            ),
+            at: 0
+        )
+
+        try? fm.removeItem(at: url)
+        bringAppToFront()
+    }
+
+    private func makeVideoThumbnail(from url: URL) -> NSImage? {
+        let asset = AVAsset(url: url)
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.appliesPreferredTrackTransform = true
+
+        do {
+            let cgImage = try generator.copyCGImage(at: CMTime(seconds: 0.2, preferredTimescale: 600), actualTime: nil)
+            let size = NSSize(width: cgImage.width, height: cgImage.height)
+            return NSImage(cgImage: cgImage, size: size)
+        } catch {
+            return nil
+        }
+    }
+
+    private func isCaptureFile(_ url: URL) -> Bool {
         let name = url.lastPathComponent.lowercased()
         let ext = url.pathExtension.lowercased()
 
-        let isImage = ["png", "jpg", "jpeg", "heic", "tiff"].contains(ext)
-        let looksLikeScreenshot =
+        let isMedia = isImageExt(ext) || isVideoExt(ext)
+        let looksLikeCapture =
             name.contains("screenshot") ||
             name.contains("screen shot") ||
-            name.contains("screen") ||
+            name.contains("screen recording") ||
+            name.contains("recording") ||
             name.contains("capture") ||
             name.contains("スクリーンショット") ||
             name.contains("スクリーン") ||
+            name.contains("録画") ||
             name.contains("画面")
 
-        return isImage && looksLikeScreenshot
+        return isMedia && looksLikeCapture
     }
 
-    private func uniqueDesktopURL(in directory: URL, baseName: String, ext: String) -> URL {
+    private func isImageExt(_ ext: String) -> Bool {
+        ["png", "jpg", "jpeg", "heic", "tiff"].contains(ext)
+    }
+
+    private func isVideoExt(_ ext: String) -> Bool {
+        ["mov", "mp4", "m4v"].contains(ext)
+    }
+
+    private func uniqueURL(in directory: URL, baseName: String, ext: String) -> URL {
         var index = 0
         while true {
             let suffix = index == 0 ? "" : " \(index)"
@@ -518,8 +606,7 @@ final class ScreenshotMonitor: ObservableObject {
     }
 
     private func bringAppToFront() {
-        let app = NSRunningApplication.current
-        app.activate(options: [.activateAllWindows])
+        NSRunningApplication.current.activate(options: [.activateAllWindows])
         NSApp.activate(ignoringOtherApps: true)
 
         for window in NSApp.windows {
@@ -527,7 +614,6 @@ final class ScreenshotMonitor: ObservableObject {
                 window.deminiaturize(nil)
             }
             window.makeKeyAndOrderFront(nil)
-            window.orderFrontRegardless()
         }
     }
 }

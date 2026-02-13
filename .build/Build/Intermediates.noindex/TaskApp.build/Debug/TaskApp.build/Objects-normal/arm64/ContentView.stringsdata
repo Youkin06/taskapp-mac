@@ -1,0 +1,48 @@
+{
+  "source": "/Users/yohei/Desktop/TaskApp/TaskApp/TaskApp/ContentView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Screenshots",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 35
+        }
+      },
+      {
+        "comment": "",
+        "key": "Tasks",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 127
+        }
+      },
+      {
+        "comment": "",
+        "key": "監視中: スクリーンショットを待機しています",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 41
+        }
+      },
+      {
+        "comment": "",
+        "key": "コピー済み",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 54
+        }
+      },
+      {
+        "comment": "",
+        "key": "タスク名",
+        "location": {
+          "startingColumn": 47,
+          "startingLine": 144
+        }
+      }
+    ]
+  },
+  "version": 1
+}

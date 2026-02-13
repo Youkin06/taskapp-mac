@@ -1,0 +1,58 @@
+{
+  "" : {
+    "diagnostics" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/TaskApp-master.dia",
+    "emit-module-dependencies" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/TaskApp-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/TaskApp-master-emit-module.dia",
+    "swift-dependencies" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/TaskApp-master.swiftdeps"
+  },
+  "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "const-values" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftconstvalues",
+    "dependencies" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/GeneratedAssetSymbols.d",
+    "diagnostics" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/GeneratedAssetSymbols.dia",
+    "index-unit-output-path" : "/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "swift-dependencies" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftdeps",
+    "swiftmodule" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/GeneratedAssetSymbols~partial.swiftmodule"
+  },
+  "/Users/yohei/Desktop/TaskApp/TaskApp/TaskApp/ContentView.swift" : {
+    "const-values" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/ContentView.swiftconstvalues",
+    "dependencies" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/ContentView.d",
+    "diagnostics" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/ContentView.dia",
+    "index-unit-output-path" : "/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/ContentView.o",
+    "llvm-bc" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/ContentView.bc",
+    "object" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/ContentView.o",
+    "swift-dependencies" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/ContentView.swiftdeps",
+    "swiftmodule" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/ContentView~partial.swiftmodule"
+  },
+  "/Users/yohei/Desktop/TaskApp/TaskApp/TaskApp/Item.swift" : {
+    "const-values" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/Item.swiftconstvalues",
+    "dependencies" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/Item.d",
+    "diagnostics" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/Item.dia",
+    "index-unit-output-path" : "/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/Item.o",
+    "llvm-bc" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/Item.bc",
+    "object" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/Item.o",
+    "swift-dependencies" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/Item.swiftdeps",
+    "swiftmodule" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/Item~partial.swiftmodule"
+  },
+  "/Users/yohei/Desktop/TaskApp/TaskApp/TaskApp/TaskAppApp.swift" : {
+    "const-values" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/TaskAppApp.swiftconstvalues",
+    "dependencies" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/TaskAppApp.d",
+    "diagnostics" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/TaskAppApp.dia",
+    "index-unit-output-path" : "/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/TaskAppApp.o",
+    "llvm-bc" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/TaskAppApp.bc",
+    "object" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/TaskAppApp.o",
+    "swift-dependencies" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/TaskAppApp.swiftdeps",
+    "swiftmodule" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/TaskAppApp~partial.swiftmodule"
+  },
+  "/Users/yohei/Desktop/TaskApp/TaskApp/TaskApp/TaskItem.swift" : {
+    "const-values" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/TaskItem.swiftconstvalues",
+    "dependencies" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/TaskItem.d",
+    "diagnostics" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/TaskItem.dia",
+    "index-unit-output-path" : "/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/TaskItem.o",
+    "llvm-bc" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/TaskItem.bc",
+    "object" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/TaskItem.o",
+    "swift-dependencies" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/TaskItem.swiftdeps",
+    "swiftmodule" : "/Users/yohei/Desktop/TaskApp/TaskApp/.build/Build/Intermediates.noindex/TaskApp.build/Debug/TaskApp.build/Objects-normal/arm64/TaskItem~partial.swiftmodule"
+  }
+}
