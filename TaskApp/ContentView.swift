@@ -129,7 +129,7 @@ struct ContentView: View {
                                         set: { task.title = $0 }
                                     ))
                                     .textFieldStyle(.plain)
-                                    .foregroundStyle(.black)
+                                    .foregroundStyle(.white)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 6)
                                     .focused($focusedTaskID, equals: task.persistentModelID)
@@ -139,6 +139,7 @@ struct ContentView: View {
                             } else {
                                 Text(task.title.isEmpty ? "無題タスク" : task.title)
                                     .foregroundStyle(.black)
+                                    .strikethrough(task.isDone, color: .black)
                                     .padding(.vertical, 4)
                                     .padding(.horizontal, 8)
                                     .background(Color.white)
