@@ -34,6 +34,73 @@ struct ContentView: View {
         ZStack(alignment: .bottomTrailing) {
             List {
                 Section {
+                    ForEach(tasks) { task in
+                        HStack(spacing: 10) {
+                            Button {
+                                task.isDone.toggle()
+                                try? modelContext.save()
+                            } label: {
+                                Image(systemName: task.isDone ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(task.isDone ? .green : .secondary)
+                            }
+                            .buttonStyle(.plain)
+
+                            if editingTaskID == task.persistentModelID {
+                                ZStack(alignment: .leading) {
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color.white)
+
+                                    TextField("タスク名", text: Binding(
+                                        get: { task.title },
+                                        set: { task.title = $0 }
+                                    ))
+                                    .textFieldStyle(.plain)
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 6)
+                                    .focused($focusedTaskID, equals: task.persistentModelID)
+                                    .onSubmit { finishEditing(task) }
+                                }
+                                .frame(minHeight: 30)
+                            } else {
+                                Text(task.title.isEmpty ? "無題タスク" : task.title)
+                                    .foregroundStyle(.black)
+                                    .strikethrough(task.isDone, color: .black)
+                                    .padding(.vertical, 4)
+                                    .padding(.horizontal, 8)
+                                    .background(Color.white)
+                                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                                    .onTapGesture {
+                                        editingTaskID = task.persistentModelID
+                                        focusedTaskID = task.persistentModelID
+                                    }
+                            }
+
+                            Spacer()
+
+                            Button {
+                                deleteTask(task)
+                            } label: {
+                                Image(systemName: "trash")
+                                    .foregroundStyle(isTaskDeleteHovered(task) ? .red : .red.opacity(0.88))
+                                    .scaleEffect(isTaskDeleteHovered(task) ? 1.22 : 1.0)
+                                    .frame(width: 24, height: 24)
+                                    .background(
+                                        Circle()
+                                            .fill(isTaskDeleteHovered(task) ? Color.red.opacity(0.16) : .clear)
+                                    )
+                                    .animation(.easeInOut(duration: 0.12), value: isTaskDeleteHovered(task))
+                            }
+                            .buttonStyle(.plain)
+                            .onHover { hovering in
+                                setTaskDeleteHover(hovering, for: task)
+                            }
+                        }
+                        .padding(.vertical, 2)
+                    }
+                }
+
+                Section {
                     if captureMonitor.items.isEmpty {
                         HStack(spacing: 8) {
                             Circle()
@@ -107,72 +174,6 @@ struct ContentView: View {
                     }
                 }
 
-                Section {
-                    ForEach(tasks) { task in
-                        HStack(spacing: 10) {
-                            Button {
-                                task.isDone.toggle()
-                                try? modelContext.save()
-                            } label: {
-                                Image(systemName: task.isDone ? "checkmark.circle.fill" : "circle")
-                                    .foregroundStyle(task.isDone ? .green : .secondary)
-                            }
-                            .buttonStyle(.plain)
-
-                            if editingTaskID == task.persistentModelID {
-                                ZStack(alignment: .leading) {
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .fill(Color.white)
-
-                                    TextField("タスク名", text: Binding(
-                                        get: { task.title },
-                                        set: { task.title = $0 }
-                                    ))
-                                    .textFieldStyle(.plain)
-                                    .foregroundStyle(.white)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 6)
-                                    .focused($focusedTaskID, equals: task.persistentModelID)
-                                    .onSubmit { finishEditing(task) }
-                                }
-                                .frame(minHeight: 30)
-                            } else {
-                                Text(task.title.isEmpty ? "無題タスク" : task.title)
-                                    .foregroundStyle(.black)
-                                    .strikethrough(task.isDone, color: .black)
-                                    .padding(.vertical, 4)
-                                    .padding(.horizontal, 8)
-                                    .background(Color.white)
-                                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                                    .onTapGesture {
-                                        editingTaskID = task.persistentModelID
-                                        focusedTaskID = task.persistentModelID
-                                    }
-                            }
-
-                            Spacer()
-
-                            Button {
-                                deleteTask(task)
-                            } label: {
-                                Image(systemName: "trash")
-                                    .foregroundStyle(isTaskDeleteHovered(task) ? .red : .red.opacity(0.88))
-                                    .scaleEffect(isTaskDeleteHovered(task) ? 1.22 : 1.0)
-                                    .frame(width: 24, height: 24)
-                                    .background(
-                                        Circle()
-                                            .fill(isTaskDeleteHovered(task) ? Color.red.opacity(0.16) : .clear)
-                                    )
-                                    .animation(.easeInOut(duration: 0.12), value: isTaskDeleteHovered(task))
-                            }
-                            .buttonStyle(.plain)
-                            .onHover { hovering in
-                                setTaskDeleteHover(hovering, for: task)
-                            }
-                        }
-                        .padding(.vertical, 2)
-                    }
-                }
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
@@ -278,12 +279,14 @@ struct ContentView: View {
     }
 
     private func captureActionBackground(_ action: CaptureAction, for item: CaptureItem) -> Color {
-        guard isCaptureHovering(action, for: item) else { return .clear }
-        switch action {
-        case .copy: return Color.blue.opacity(0.12)
-        case .save: return Color.green.opacity(0.12)
-        case .delete: return Color.red.opacity(0.12)
+        if isCaptureHovering(action, for: item) {
+            switch action {
+            case .copy: return Color.blue.opacity(0.12)
+            case .save: return Color.green.opacity(0.12)
+            case .delete: return Color.red.opacity(0.12)
+            }
         }
+        return Color.white.opacity(0.92)
     }
 
     private func isTaskDeleteHovered(_ task: TaskItem) -> Bool {
