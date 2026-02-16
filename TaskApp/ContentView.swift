@@ -27,12 +27,34 @@ struct ContentView: View {
     @State private var isHoveringAddButton = false
 
     private var totalRows: Int {
-        tasks.count + captureMonitor.items.count
+        tasks.count + captureMonitor.items.count + 1
     }
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            List {
+        List {
+            Section {
+                HStack {
+                    Spacer()
+                    Button {
+                        addTaskAndStartEditing()
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(isHoveringAddButton ? .blue : .black)
+                            .frame(width: 36, height: 36)
+                            .background(Circle().fill(isHoveringAddButton ? Color.blue.opacity(0.2) : .white))
+                            .scaleEffect(isHoveringAddButton ? 1.22 : 1.0)
+                            .shadow(radius: 2, y: 1)
+                            .animation(.easeInOut(duration: 0.12), value: isHoveringAddButton)
+                    }
+                    .buttonStyle(.plain)
+                    .onHover { hovering in
+                        isHoveringAddButton = hovering
+                    }
+                }
+                .listRowBackground(Color.clear)
+            }
+
                 Section {
                     ForEach(tasks) { task in
                         HStack(spacing: 10) {
@@ -178,26 +200,6 @@ struct ContentView: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .background(.clear)
-
-            Button {
-                addTaskAndStartEditing()
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(isHoveringAddButton ? .blue : .black)
-                    .frame(width: 36, height: 36)
-                    .background(Circle().fill(isHoveringAddButton ? Color.blue.opacity(0.2) : .white))
-                    .scaleEffect(isHoveringAddButton ? 1.22 : 1.0)
-                    .shadow(radius: 2, y: 1)
-                    .animation(.easeInOut(duration: 0.12), value: isHoveringAddButton)
-            }
-            .buttonStyle(.plain)
-            .onHover { hovering in
-                isHoveringAddButton = hovering
-            }
-            .padding(12)
-        }
-        .background(.clear)
         .background(WindowConfigurator(totalRows: totalRows))
     }
 
