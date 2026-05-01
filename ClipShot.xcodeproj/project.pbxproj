@@ -24,18 +24,18 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		4701AD992F3F773800933AB2 /* TaskApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TaskApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		4701ADAC2F3F773A00933AB2 /* TaskAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TaskAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		4701ADB62F3F773A00933AB2 /* TaskAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TaskAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		4701AD992F3F773800933AB2 /* ClipShot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClipShot.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4701ADAC2F3F773A00933AB2 /* ClipShotTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ClipShotTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		4701ADB62F3F773A00933AB2 /* ClipShotUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ClipShotUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		4701ADCF2F3F79EE00933AB2 /* Exceptions for "TaskApp" folder in "TaskApp" target */ = {
+		4701ADCF2F3F79EE00933AB2 /* Exceptions for "TaskApp" folder in "ClipShot" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Untitled.swift,
 			);
-			target = 4701AD982F3F773800933AB2 /* TaskApp */;
+			target = 4701AD982F3F773800933AB2 /* ClipShot */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -43,7 +43,7 @@
 		4701AD9B2F3F773800933AB2 /* TaskApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				4701ADCF2F3F79EE00933AB2 /* Exceptions for "TaskApp" folder in "TaskApp" target */,
+				4701ADCF2F3F79EE00933AB2 /* Exceptions for "TaskApp" folder in "ClipShot" target */,
 			);
 			path = TaskApp;
 			sourceTree = "<group>";
@@ -98,9 +98,9 @@
 		4701AD9A2F3F773800933AB2 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				4701AD992F3F773800933AB2 /* TaskApp.app */,
-				4701ADAC2F3F773A00933AB2 /* TaskAppTests.xctest */,
-				4701ADB62F3F773A00933AB2 /* TaskAppUITests.xctest */,
+				4701AD992F3F773800933AB2 /* ClipShot.app */,
+				4701ADAC2F3F773A00933AB2 /* ClipShotTests.xctest */,
+				4701ADB62F3F773A00933AB2 /* ClipShotUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -108,9 +108,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		4701AD982F3F773800933AB2 /* TaskApp */ = {
+		4701AD982F3F773800933AB2 /* ClipShot */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 4701ADC02F3F773A00933AB2 /* Build configuration list for PBXNativeTarget "TaskApp" */;
+			buildConfigurationList = 4701ADC02F3F773A00933AB2 /* Build configuration list for PBXNativeTarget "ClipShot" */;
 			buildPhases = (
 				4701AD952F3F773800933AB2 /* Sources */,
 				4701AD962F3F773800933AB2 /* Frameworks */,
@@ -123,16 +123,16 @@
 			fileSystemSynchronizedGroups = (
 				4701AD9B2F3F773800933AB2 /* TaskApp */,
 			);
-			name = TaskApp;
+			name = ClipShot;
 			packageProductDependencies = (
 			);
 			productName = TaskApp;
-			productReference = 4701AD992F3F773800933AB2 /* TaskApp.app */;
+			productReference = 4701AD992F3F773800933AB2 /* ClipShot.app */;
 			productType = "com.apple.product-type.application";
 		};
-		4701ADAB2F3F773A00933AB2 /* TaskAppTests */ = {
+		4701ADAB2F3F773A00933AB2 /* ClipShotTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 4701ADC32F3F773A00933AB2 /* Build configuration list for PBXNativeTarget "TaskAppTests" */;
+			buildConfigurationList = 4701ADC32F3F773A00933AB2 /* Build configuration list for PBXNativeTarget "ClipShotTests" */;
 			buildPhases = (
 				4701ADA82F3F773A00933AB2 /* Sources */,
 				4701ADA92F3F773A00933AB2 /* Frameworks */,
@@ -146,16 +146,16 @@
 			fileSystemSynchronizedGroups = (
 				4701ADAF2F3F773A00933AB2 /* TaskAppTests */,
 			);
-			name = TaskAppTests;
+			name = ClipShotTests;
 			packageProductDependencies = (
 			);
 			productName = TaskAppTests;
-			productReference = 4701ADAC2F3F773A00933AB2 /* TaskAppTests.xctest */;
+			productReference = 4701ADAC2F3F773A00933AB2 /* ClipShotTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		4701ADB52F3F773A00933AB2 /* TaskAppUITests */ = {
+		4701ADB52F3F773A00933AB2 /* ClipShotUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 4701ADC62F3F773A00933AB2 /* Build configuration list for PBXNativeTarget "TaskAppUITests" */;
+			buildConfigurationList = 4701ADC62F3F773A00933AB2 /* Build configuration list for PBXNativeTarget "ClipShotUITests" */;
 			buildPhases = (
 				4701ADB22F3F773A00933AB2 /* Sources */,
 				4701ADB32F3F773A00933AB2 /* Frameworks */,
@@ -169,11 +169,11 @@
 			fileSystemSynchronizedGroups = (
 				4701ADB92F3F773A00933AB2 /* TaskAppUITests */,
 			);
-			name = TaskAppUITests;
+			name = ClipShotUITests;
 			packageProductDependencies = (
 			);
 			productName = TaskAppUITests;
-			productReference = 4701ADB62F3F773A00933AB2 /* TaskAppUITests.xctest */;
+			productReference = 4701ADB62F3F773A00933AB2 /* ClipShotUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -199,7 +199,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 4701AD942F3F773800933AB2 /* Build configuration list for PBXProject "TaskApp" */;
+			buildConfigurationList = 4701AD942F3F773800933AB2 /* Build configuration list for PBXProject "ClipShot" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -213,9 +213,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				4701AD982F3F773800933AB2 /* TaskApp */,
-				4701ADAB2F3F773A00933AB2 /* TaskAppTests */,
-				4701ADB52F3F773A00933AB2 /* TaskAppUITests */,
+				4701AD982F3F773800933AB2 /* ClipShot */,
+				4701ADAB2F3F773A00933AB2 /* ClipShotTests */,
+				4701ADB52F3F773A00933AB2 /* ClipShotUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -271,12 +271,12 @@
 /* Begin PBXTargetDependency section */
 		4701ADAE2F3F773A00933AB2 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 4701AD982F3F773800933AB2 /* TaskApp */;
+			target = 4701AD982F3F773800933AB2 /* ClipShot */;
 			targetProxy = 4701ADAD2F3F773A00933AB2 /* PBXContainerItemProxy */;
 		};
 		4701ADB82F3F773A00933AB2 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 4701AD982F3F773800933AB2 /* TaskApp */;
+			target = 4701AD982F3F773800933AB2 /* ClipShot */;
 			targetProxy = 4701ADB72F3F773A00933AB2 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -422,7 +422,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.youkin.TaskApp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.youkin.ClipShot;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -451,7 +451,7 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.youkin.TaskApp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.youkin.ClipShot;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -472,7 +472,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TaskApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TaskApp";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ClipShot.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ClipShot";
 			};
 			name = Debug;
 		};
@@ -490,7 +490,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TaskApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TaskApp";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ClipShot.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ClipShot";
 			};
 			name = Release;
 		};
@@ -529,7 +529,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		4701AD942F3F773800933AB2 /* Build configuration list for PBXProject "TaskApp" */ = {
+		4701AD942F3F773800933AB2 /* Build configuration list for PBXProject "ClipShot" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				4701ADBE2F3F773A00933AB2 /* Debug */,
@@ -538,7 +538,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		4701ADC02F3F773A00933AB2 /* Build configuration list for PBXNativeTarget "TaskApp" */ = {
+		4701ADC02F3F773A00933AB2 /* Build configuration list for PBXNativeTarget "ClipShot" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				4701ADC12F3F773A00933AB2 /* Debug */,
@@ -547,7 +547,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		4701ADC32F3F773A00933AB2 /* Build configuration list for PBXNativeTarget "TaskAppTests" */ = {
+		4701ADC32F3F773A00933AB2 /* Build configuration list for PBXNativeTarget "ClipShotTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				4701ADC42F3F773A00933AB2 /* Debug */,
@@ -556,7 +556,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		4701ADC62F3F773A00933AB2 /* Build configuration list for PBXNativeTarget "TaskAppUITests" */ = {
+		4701ADC62F3F773A00933AB2 /* Build configuration list for PBXNativeTarget "ClipShotUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				4701ADC72F3F773A00933AB2 /* Debug */,
