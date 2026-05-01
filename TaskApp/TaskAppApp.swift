@@ -1,14 +1,12 @@
 import SwiftUI
-import SwiftData
 import AppKit
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        NSApp.setActivationPolicy(.regular)
+        NSApp.setActivationPolicy(.accessory)
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        // ウィンドウを閉じてもアプリは終了しない
         false
     }
 }
@@ -16,13 +14,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 @main
 struct TaskAppApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @StateObject private var captureMonitor = CaptureMonitor()
 
     var body: some Scene {
-        Window("TaskApp", id: "main") {
-            ContentView()
+        MenuBarExtra {
+            ContentView(captureMonitor: captureMonitor)
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "camera.viewfinder")
+                if !captureMonitor.items.isEmpty {
+                    Text("\(captureMonitor.items.count)")
+                }
+            }
         }
-        .defaultSize(width: 360, height: 220)
-        .windowStyle(.hiddenTitleBar)
-        .modelContainer(for: TaskItem.self)
+        .menuBarExtraStyle(.window)
     }
 }

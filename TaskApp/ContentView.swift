@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftData
 import AppKit
 import AVFoundation
 
@@ -15,237 +14,86 @@ struct ContentView: View {
         let action: CaptureAction
     }
 
-    @Environment(\.modelContext) private var modelContext
-    @Query(sort: \TaskItem.createdAt, order: .reverse) private var tasks: [TaskItem]
-
-    @StateObject private var captureMonitor = CaptureMonitor()
-    @State private var editingTaskID: PersistentIdentifier?
-    @FocusState private var focusedTaskID: PersistentIdentifier?
+    @ObservedObject var captureMonitor: CaptureMonitor
 
     @State private var hoveredCaptureActions: Set<CaptureActionKey> = []
-    @State private var hoveredTaskDeleteIDs: Set<PersistentIdentifier> = []
-    @State private var isHoveringAddButton = false
-
-    private var totalRows: Int {
-        tasks.count + captureMonitor.items.count + 1
-    }
 
     var body: some View {
-        List {
-            Section {
-                HStack {
-                    Spacer()
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 8) {
+                Image(systemName: "camera.viewfinder")
+                    .font(.system(size: 16, weight: .semibold))
+                Text("Screen Copy")
+                    .font(.headline)
+                Spacer()
+                if !captureMonitor.items.isEmpty {
+                    Text("\(captureMonitor.items.count)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(.quaternary, in: Capsule())
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.top, 12)
+            .padding(.bottom, 10)
+
+            Divider()
+
+            if captureMonitor.items.isEmpty {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(.green)
+                        .frame(width: 7, height: 7)
+                    Text("監視中: スクリーンショット / 録画を待機")
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 14)
+                .frame(height: 72)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(captureMonitor.items) { item in
+                            captureRow(for: item)
+                            if item.id != captureMonitor.items.last?.id {
+                                Divider()
+                                    .padding(.leading, 118)
+                            }
+                        }
+                    }
+                }
+                .frame(maxHeight: 360)
+            }
+
+            Divider()
+
+            HStack {
+                if !captureMonitor.items.isEmpty {
                     Button {
-                        addTaskAndStartEditing()
+                        captureMonitor.clear()
                     } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(isHoveringAddButton ? .blue : .black)
-                            .frame(width: 36, height: 36)
-                            .background(Circle().fill(isHoveringAddButton ? Color.blue.opacity(0.2) : .white))
-                            .scaleEffect(isHoveringAddButton ? 1.22 : 1.0)
-                            .shadow(radius: 2, y: 1)
-                            .animation(.easeInOut(duration: 0.12), value: isHoveringAddButton)
+                        Label("消去", systemImage: "xmark.circle")
                     }
                     .buttonStyle(.plain)
-                    .onHover { hovering in
-                        isHoveringAddButton = hovering
-                    }
-                }
-                .listRowBackground(Color.clear)
-            }
-
-                Section {
-                    ForEach(tasks) { task in
-                        HStack(spacing: 10) {
-                            Button {
-                                task.isDone.toggle()
-                                try? modelContext.save()
-                            } label: {
-                                Image(systemName: task.isDone ? "checkmark.circle.fill" : "circle")
-                                    .foregroundStyle(task.isDone ? .green : .secondary)
-                            }
-                            .buttonStyle(.plain)
-
-                            if editingTaskID == task.persistentModelID {
-                                ZStack(alignment: .leading) {
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .fill(Color.white)
-
-                                    TextField("タスク名", text: Binding(
-                                        get: { task.title },
-                                        set: { task.title = $0 }
-                                    ))
-                                    .textFieldStyle(.plain)
-                                    .foregroundStyle(.white)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 6)
-                                    .focused($focusedTaskID, equals: task.persistentModelID)
-                                    .onSubmit { finishEditing(task) }
-                                }
-                                .frame(minHeight: 30)
-                            } else {
-                                Text(task.title.isEmpty ? "無題タスク" : task.title)
-                                    .foregroundStyle(.black)
-                                    .strikethrough(task.isDone, color: .black)
-                                    .padding(.vertical, 4)
-                                    .padding(.horizontal, 8)
-                                    .background(Color.white)
-                                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                                    .onTapGesture {
-                                        editingTaskID = task.persistentModelID
-                                        focusedTaskID = task.persistentModelID
-                                    }
-                            }
-
-                            Spacer()
-
-                            Button {
-                                deleteTask(task)
-                            } label: {
-                                Image(systemName: "trash")
-                                    .foregroundStyle(isTaskDeleteHovered(task) ? .red : .red.opacity(0.88))
-                                    .scaleEffect(isTaskDeleteHovered(task) ? 1.22 : 1.0)
-                                    .frame(width: 24, height: 24)
-                                    .background(
-                                        Circle()
-                                            .fill(isTaskDeleteHovered(task) ? Color.red.opacity(0.16) : .clear)
-                                    )
-                                    .animation(.easeInOut(duration: 0.12), value: isTaskDeleteHovered(task))
-                            }
-                            .buttonStyle(.plain)
-                            .onHover { hovering in
-                                setTaskDeleteHover(hovering, for: task)
-                            }
-                        }
-                        .padding(.vertical, 2)
-                    }
+                    .foregroundStyle(.secondary)
                 }
 
-                Section {
-                    if captureMonitor.items.isEmpty {
-                        HStack(spacing: 8) {
-                            Circle()
-                                .fill(.green)
-                                .frame(width: 7, height: 7)
-                            Text("監視中: スクリーンショット / 録画を待機")
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(.vertical, 4)
-                    } else {
-                        ForEach(captureMonitor.items) { item in
-                            HStack(spacing: 10) {
-                                previewView(for: item)
+                Spacer()
 
-                                Text(item.kind == .video ? "動画を一時保存中" : "画像をコピー済み")
-                                    .foregroundStyle(.black)
-                                    .padding(.vertical, 4)
-                                    .padding(.horizontal, 8)
-                                    .background(Color.white)
-                                    .clipShape(RoundedRectangle(cornerRadius: 6))
-
-                                Spacer()
-
-                                Button {
-                                    captureMonitor.copyToPasteboard(item)
-                                } label: {
-                                    Image(systemName: "doc.on.doc")
-                                        .foregroundStyle(captureActionForeground(.copy, for: item))
-                                        .scaleEffect(captureActionScale(.copy, for: item))
-                                        .frame(width: 24, height: 24)
-                                        .background(Circle().fill(captureActionBackground(.copy, for: item)))
-                                        .animation(.easeInOut(duration: 0.12), value: captureActionScale(.copy, for: item))
-                                }
-                                .buttonStyle(.plain)
-                                .onHover { hovering in
-                                    setCaptureHover(hovering, action: .copy, for: item)
-                                }
-
-                                Button {
-                                    captureMonitor.saveToDesktop(item)
-                                } label: {
-                                    Image(systemName: "square.and.arrow.down")
-                                        .foregroundStyle(captureActionForeground(.save, for: item))
-                                        .scaleEffect(captureActionScale(.save, for: item))
-                                        .frame(width: 24, height: 24)
-                                        .background(Circle().fill(captureActionBackground(.save, for: item)))
-                                        .animation(.easeInOut(duration: 0.12), value: captureActionScale(.save, for: item))
-                                }
-                                .buttonStyle(.plain)
-                                .onHover { hovering in
-                                    setCaptureHover(hovering, action: .save, for: item)
-                                }
-
-                                Button {
-                                    captureMonitor.remove(item)
-                                } label: {
-                                    Image(systemName: "trash")
-                                        .foregroundStyle(captureActionForeground(.delete, for: item))
-                                        .scaleEffect(captureActionScale(.delete, for: item))
-                                        .frame(width: 24, height: 24)
-                                        .background(Circle().fill(captureActionBackground(.delete, for: item)))
-                                        .animation(.easeInOut(duration: 0.12), value: captureActionScale(.delete, for: item))
-                                }
-                                .buttonStyle(.plain)
-                                .onHover { hovering in
-                                    setCaptureHover(hovering, action: .delete, for: item)
-                                }
-                            }
-                            .padding(.vertical, 2)
-                        }
-                    }
+                Button {
+                    NSApp.terminate(nil)
+                } label: {
+                    Label("終了", systemImage: "power")
                 }
-
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .background(.clear)
-        .background(WindowConfigurator(totalRows: totalRows))
-    }
-
-    @ViewBuilder
-    private func previewView(for item: CaptureItem) -> some View {
-        if let image = item.thumbnail {
-            Image(nsImage: image)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 92, height: 56)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-        } else if item.kind == .video {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.black.opacity(0.15))
-                Image(systemName: "video.fill")
-                    .foregroundStyle(.black.opacity(0.8))
-            }
-            .frame(width: 92, height: 56)
+            .padding(.horizontal, 14)
+            .padding(.top, 10)
+            .padding(.bottom, 12)
         }
-    }
-
-    private func addTaskAndStartEditing() {
-        let newTask = TaskItem(title: "")
-        modelContext.insert(newTask)
-        try? modelContext.save()
-
-        editingTaskID = newTask.persistentModelID
-        DispatchQueue.main.async {
-            focusedTaskID = newTask.persistentModelID
-        }
-    }
-
-    private func finishEditing(_ task: TaskItem) {
-        task.title = task.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        if task.title.isEmpty {
-            modelContext.delete(task)
-        }
-        try? modelContext.save()
-        editingTaskID = nil
-        focusedTaskID = nil
-    }
-
-    private func deleteTask(_ task: TaskItem) {
-        modelContext.delete(task)
-        try? modelContext.save()
+        .frame(width: 380)
     }
 
     private func setCaptureHover(_ hovering: Bool, action: CaptureAction, for item: CaptureItem) {
@@ -291,45 +139,79 @@ struct ContentView: View {
         return Color.white.opacity(0.92)
     }
 
-    private func isTaskDeleteHovered(_ task: TaskItem) -> Bool {
-        hoveredTaskDeleteIDs.contains(task.persistentModelID)
+    private func captureRow(for item: CaptureItem) -> some View {
+        HStack(spacing: 10) {
+            previewView(for: item)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.kind == .video ? "動画を一時保存中" : "画像をコピー済み")
+                    .font(.subheadline)
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+
+                Text(item.fileDate, style: .time)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            HStack(spacing: 6) {
+                actionButton(.copy, systemName: "doc.on.doc", help: "クリップボードへコピー", for: item) {
+                    captureMonitor.copyToPasteboard(item)
+                }
+
+                actionButton(.save, systemName: "square.and.arrow.down", help: "デスクトップへ保存", for: item) {
+                    captureMonitor.saveToDesktop(item)
+                }
+
+                actionButton(.delete, systemName: "trash", help: "一覧から削除", for: item) {
+                    captureMonitor.remove(item)
+                }
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
     }
 
-    private func setTaskDeleteHover(_ hovering: Bool, for task: TaskItem) {
-        let id = task.persistentModelID
-        if hovering {
-            _ = hoveredTaskDeleteIDs.insert(id)
-        } else {
-            _ = hoveredTaskDeleteIDs.remove(id)
+    @ViewBuilder
+    private func previewView(for item: CaptureItem) -> some View {
+        if let image = item.thumbnail {
+            Image(nsImage: image)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 92, height: 56)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+        } else if item.kind == .video {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.black.opacity(0.15))
+                Image(systemName: "video.fill")
+                    .foregroundStyle(.black.opacity(0.8))
+            }
+            .frame(width: 92, height: 56)
         }
     }
-}
 
-private struct WindowConfigurator: NSViewRepresentable {
-    let totalRows: Int
-
-    func makeNSView(context: Context) -> NSView { NSView() }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        DispatchQueue.main.async {
-            guard let window = nsView.window else { return }
-
-            window.title = ""
-            window.titleVisibility = .hidden
-            window.titlebarAppearsTransparent = true
-            window.isOpaque = false
-            window.backgroundColor = .clear
-            window.hasShadow = true
-
-            let rowHeight: CGFloat = 38
-            let baseHeight: CGFloat = 80
-            let targetHeight = max(130, min(560, CGFloat(totalRows) * rowHeight + baseHeight))
-
-            var frame = window.frame
-            if abs(frame.height - targetHeight) > 0.5 {
-                frame.size.height = targetHeight
-                window.setFrame(frame, display: true, animate: true)
-            }
+    private func actionButton(
+        _ action: CaptureAction,
+        systemName: String,
+        help: String,
+        for item: CaptureItem,
+        perform: @escaping () -> Void
+    ) -> some View {
+        Button(action: perform) {
+            Image(systemName: systemName)
+                .foregroundStyle(captureActionForeground(action, for: item))
+                .scaleEffect(captureActionScale(action, for: item))
+                .frame(width: 26, height: 26)
+                .background(Circle().fill(captureActionBackground(action, for: item)))
+                .animation(.easeInOut(duration: 0.12), value: captureActionScale(action, for: item))
+        }
+        .buttonStyle(.plain)
+        .help(help)
+        .onHover { hovering in
+            setCaptureHover(hovering, action: action, for: item)
         }
     }
 }
@@ -375,6 +257,15 @@ final class CaptureMonitor: ObservableObject {
             try? fm.removeItem(at: stagedURL)
         }
         items.removeAll { $0.id == item.id }
+    }
+
+    func clear() {
+        for item in items {
+            if let stagedURL = item.stagedURL {
+                try? fm.removeItem(at: stagedURL)
+            }
+        }
+        items.removeAll()
     }
 
     func copyToPasteboard(_ item: CaptureItem) {
@@ -511,7 +402,6 @@ final class CaptureMonitor: ObservableObject {
         )
 
         try? fm.removeItem(at: url)
-        bringAppToFront()
     }
 
     private func processVideo(url: URL, created: Date) {
@@ -555,7 +445,6 @@ final class CaptureMonitor: ObservableObject {
         )
 
         try? fm.removeItem(at: url)
-        bringAppToFront()
     }
 
     private func makeVideoThumbnail(from url: URL) -> NSImage? {
@@ -611,15 +500,4 @@ final class CaptureMonitor: ObservableObject {
         }
     }
 
-    private func bringAppToFront() {
-        NSRunningApplication.current.activate(options: [.activateAllWindows])
-        NSApp.activate(ignoringOtherApps: true)
-
-        for window in NSApp.windows {
-            if window.isMiniaturized {
-                window.deminiaturize(nil)
-            }
-            window.makeKeyAndOrderFront(nil)
-        }
-    }
 }
