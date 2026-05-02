@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import AVFoundation
+import CoreServices
 
 struct ContentView: View {
     private enum CaptureAction: Hashable {
@@ -17,6 +18,11 @@ struct ContentView: View {
     @ObservedObject var captureMonitor: CaptureMonitor
 
     @State private var hoveredCaptureActions: Set<CaptureActionKey> = []
+
+    private var captureListMaxHeight: CGFloat {
+        guard let screenHeight = NSScreen.main?.visibleFrame.height else { return 720 }
+        return min(720, max(360, screenHeight - 220))
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -63,7 +69,7 @@ struct ContentView: View {
                         }
                     }
                 }
-                .frame(maxHeight: 360)
+                .frame(maxHeight: captureListMaxHeight)
             }
 
             Divider()
@@ -232,16 +238,36 @@ struct CaptureItem: Identifiable {
 
 @MainActor
 final class CaptureMonitor: ObservableObject {
+    private struct PendingCapture {
+        var fileSize: Int64
+        var modifiedAt: Date
+        var stableSince: Date
+    }
+
+    private struct CaptureSnapshot {
+        let fileSize: Int64
+        let modifiedAt: Date
+        let createdAt: Date
+        let kind: CaptureKind
+    }
+
+    private struct CaptureHandling {
+        let shouldTrack: Bool
+        let shouldRemoveSource: Bool
+    }
+
     @Published var items: [CaptureItem] = []
 
     private var processedPaths: Set<String> = []
-    private var timer: Timer?
+    private var pendingCaptures: [String: PendingCapture] = [:]
+    private var timer: DispatchSourceTimer?
     private let fm = FileManager.default
     private let stagingDirectory: URL
+    private let launchedAt = Date()
 
     init() {
         let base = fm.urls(for: .cachesDirectory, in: .userDomainMask).first!
-        stagingDirectory = base.appendingPathComponent("TaskAppCaptureStaging", isDirectory: true)
+        stagingDirectory = base.appendingPathComponent("ClipShotCaptureStaging", isDirectory: true)
         try? fm.createDirectory(at: stagingDirectory, withIntermediateDirectories: true)
 
         seedExisting()
@@ -249,7 +275,7 @@ final class CaptureMonitor: ObservableObject {
     }
 
     deinit {
-        timer?.invalidate()
+        timer?.cancel()
     }
 
     func remove(_ item: CaptureItem) {
@@ -312,12 +338,15 @@ final class CaptureMonitor: ObservableObject {
     }
 
     private func start() {
-        timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+        let timer = DispatchSource.makeTimerSource(queue: .main)
+        timer.schedule(deadline: .now(), repeating: .milliseconds(350), leeway: .milliseconds(100))
+        timer.setEventHandler { [weak self] in
             Task { @MainActor in
                 self?.scan()
             }
         }
-        timer?.tolerance = 0.1
+        self.timer = timer
+        timer.resume()
     }
 
     private func captureDirectory() -> URL {
@@ -331,60 +360,143 @@ final class CaptureMonitor: ObservableObject {
     private func seedExisting() {
         let dir = captureDirectory()
         guard let urls = try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil) else { return }
-        for url in urls where isCaptureFile(url) {
+        for url in urls where captureKind(for: url) != nil {
             processedPaths.insert(url.path)
         }
     }
 
     private func scan() {
         let dir = captureDirectory()
+        let now = Date()
+        let resourceKeys: Set<URLResourceKey> = [
+            .creationDateKey,
+            .contentModificationDateKey,
+            .fileSizeKey,
+            .isRegularFileKey
+        ]
 
         guard let urls = try? fm.contentsOfDirectory(
             at: dir,
-            includingPropertiesForKeys: [.creationDateKey],
+            includingPropertiesForKeys: Array(resourceKeys),
             options: [.skipsHiddenFiles]
         ) else { return }
 
-        let candidates = urls
-            .filter { isCaptureFile($0) && !processedPaths.contains($0.path) }
-            .sorted { lhs, rhs in
-                let l = (try? lhs.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
-                let r = (try? rhs.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
-                return l > r
-            }
+        var activeCandidatePaths: Set<String> = []
+        let candidates = urls.compactMap { url -> (url: URL, snapshot: CaptureSnapshot, shouldRemoveSource: Bool)? in
+            guard !processedPaths.contains(url.path),
+                  let snapshot = captureSnapshot(for: url, resourceKeys: resourceKeys)
+            else { return nil }
 
-        for url in candidates {
-            process(url: url)
+            let handling = captureHandling(for: url, snapshot: snapshot)
+            guard handling.shouldTrack else { return nil }
+
+            activeCandidatePaths.insert(url.path)
+            return (url, snapshot, handling.shouldRemoveSource)
+        }
+        .sorted { lhs, rhs in
+            lhs.snapshot.createdAt > rhs.snapshot.createdAt
+        }
+
+        pendingCaptures = pendingCaptures.filter { activeCandidatePaths.contains($0.key) }
+
+        for candidate in candidates {
+            let path = candidate.url.path
+            guard isStable(candidate.snapshot, at: now, forPath: path) else { continue }
+            if process(
+                url: candidate.url,
+                kind: candidate.snapshot.kind,
+                created: candidate.snapshot.createdAt,
+                shouldRemoveSource: candidate.shouldRemoveSource
+            ) {
+                processedPaths.insert(path)
+                pendingCaptures.removeValue(forKey: path)
+            }
         }
     }
 
-    private func process(url: URL) {
-        let ext = url.pathExtension.lowercased()
-        let created = (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date()
+    private func captureSnapshot(for url: URL, resourceKeys: Set<URLResourceKey>) -> CaptureSnapshot? {
+        guard let kind = captureKind(for: url),
+              let values = try? url.resourceValues(forKeys: resourceKeys),
+              values.isRegularFile != false
+        else { return nil }
 
-        if isImageExt(ext) {
-            processImage(url: url, created: created)
-            return
+        let fileSize = Int64(values.fileSize ?? 0)
+        guard fileSize > 0 else { return nil }
+
+        let createdAt = values.creationDate ?? Date()
+        let modifiedAt = values.contentModificationDate ?? createdAt
+
+        return CaptureSnapshot(
+            fileSize: fileSize,
+            modifiedAt: modifiedAt,
+            createdAt: createdAt,
+            kind: kind
+        )
+    }
+
+    private func captureHandling(for url: URL, snapshot: CaptureSnapshot) -> CaptureHandling {
+        if hasScreenCaptureMetadata(url) || hasCaptureName(url) {
+            return CaptureHandling(shouldTrack: true, shouldRemoveSource: true)
         }
 
-        if isVideoExt(ext) {
-            processVideo(url: url, created: created)
-            return
+        // If the user customized macOS screenshot names, the file may not contain
+        // "screenshot" or localized equivalents. Existing media is seeded on launch,
+        // so only new media files in the configured screenshot directory reach here.
+        // These fallback matches are copied but not removed, which avoids deleting
+        // unrelated images or videos saved to Desktop.
+        if snapshot.createdAt >= launchedAt.addingTimeInterval(-2) {
+            return CaptureHandling(shouldTrack: true, shouldRemoveSource: false)
+        }
+
+        return CaptureHandling(shouldTrack: false, shouldRemoveSource: false)
+    }
+
+    private func isStable(_ snapshot: CaptureSnapshot, at now: Date, forPath path: String) -> Bool {
+        let requiredStableDuration = stableDuration(for: snapshot.kind)
+
+        guard var pending = pendingCaptures[path] else {
+            pendingCaptures[path] = PendingCapture(
+                fileSize: snapshot.fileSize,
+                modifiedAt: snapshot.modifiedAt,
+                stableSince: now
+            )
+            return false
+        }
+
+        if pending.fileSize != snapshot.fileSize || pending.modifiedAt != snapshot.modifiedAt {
+            pending.fileSize = snapshot.fileSize
+            pending.modifiedAt = snapshot.modifiedAt
+            pending.stableSince = now
+            pendingCaptures[path] = pending
+            return false
+        }
+
+        pendingCaptures[path] = pending
+        return now.timeIntervalSince(pending.stableSince) >= requiredStableDuration
+    }
+
+    private func stableDuration(for kind: CaptureKind) -> TimeInterval {
+        switch kind {
+        case .image:
+            return 0.8
+        case .video:
+            return 2.5
         }
     }
 
-    private func processImage(url: URL, created: Date) {
-        var image: NSImage?
-        for _ in 0..<8 {
-            if let data = try? Data(contentsOf: url), let loaded = NSImage(data: data) {
-                image = loaded
-                break
-            }
-            Thread.sleep(forTimeInterval: 0.08)
+    private func process(url: URL, kind: CaptureKind, created: Date, shouldRemoveSource: Bool) -> Bool {
+        switch kind {
+        case .image:
+            return processImage(url: url, created: created, shouldRemoveSource: shouldRemoveSource)
+        case .video:
+            return processVideo(url: url, created: created, shouldRemoveSource: shouldRemoveSource)
         }
-        guard let image else { return }
+    }
 
-        processedPaths.insert(url.path)
+    private func processImage(url: URL, created: Date, shouldRemoveSource: Bool) -> Bool {
+        guard let data = try? Data(contentsOf: url),
+              let image = NSImage(data: data)
+        else { return false }
 
         let pb = NSPasteboard.general
         pb.clearContents()
@@ -401,30 +513,21 @@ final class CaptureMonitor: ObservableObject {
             at: 0
         )
 
-        try? fm.removeItem(at: url)
+        if shouldRemoveSource {
+            try? fm.removeItem(at: url)
+        }
+        return true
     }
 
-    private func processVideo(url: URL, created: Date) {
-        var data: Data?
-        for _ in 0..<10 {
-            if let loaded = try? Data(contentsOf: url), !loaded.isEmpty {
-                data = loaded
-                break
-            }
-            Thread.sleep(forTimeInterval: 0.12)
-        }
-        guard let data else { return }
-
-        processedPaths.insert(url.path)
-
+    private func processVideo(url: URL, created: Date, shouldRemoveSource: Bool) -> Bool {
         let stagedURL = stagingDirectory
             .appendingPathComponent(UUID().uuidString)
             .appendingPathExtension(url.pathExtension)
 
         do {
-            try data.write(to: stagedURL, options: .atomic)
+            try fm.copyItem(at: url, to: stagedURL)
         } catch {
-            return
+            return false
         }
 
         let thumbnail = makeVideoThumbnail(from: stagedURL)
@@ -444,7 +547,10 @@ final class CaptureMonitor: ObservableObject {
             at: 0
         )
 
-        try? fm.removeItem(at: url)
+        if shouldRemoveSource {
+            try? fm.removeItem(at: url)
+        }
+        return true
     }
 
     private func makeVideoThumbnail(from url: URL) -> NSImage? {
@@ -461,13 +567,16 @@ final class CaptureMonitor: ObservableObject {
         }
     }
 
-    private func isCaptureFile(_ url: URL) -> Bool {
-        let name = url.lastPathComponent.lowercased()
+    private func captureKind(for url: URL) -> CaptureKind? {
         let ext = url.pathExtension.lowercased()
+        if isImageExt(ext) { return .image }
+        if isVideoExt(ext) { return .video }
+        return nil
+    }
 
-        let isMedia = isImageExt(ext) || isVideoExt(ext)
-        let looksLikeCapture =
-            name.contains("screenshot") ||
+    private func hasCaptureName(_ url: URL) -> Bool {
+        let name = url.lastPathComponent.lowercased()
+        return name.contains("screenshot") ||
             name.contains("screen shot") ||
             name.contains("screen recording") ||
             name.contains("recording") ||
@@ -476,8 +585,17 @@ final class CaptureMonitor: ObservableObject {
             name.contains("スクリーン") ||
             name.contains("録画") ||
             name.contains("画面")
+    }
 
-        return isMedia && looksLikeCapture
+    private func hasScreenCaptureMetadata(_ url: URL) -> Bool {
+        guard let item = MDItemCreate(kCFAllocatorDefault, url.path as CFString) else { return false }
+
+        if let value = MDItemCopyAttribute(item, "kMDItemIsScreenCapture" as CFString) as? NSNumber,
+           value.boolValue {
+            return true
+        }
+
+        return MDItemCopyAttribute(item, "kMDItemScreenCaptureType" as CFString) != nil
     }
 
     private func isImageExt(_ ext: String) -> Bool {
