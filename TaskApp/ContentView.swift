@@ -18,6 +18,11 @@ struct ContentView: View {
     @ObservedObject var captureMonitor: CaptureMonitor
 
     @State private var hoveredCaptureActions: Set<CaptureActionKey> = []
+    @State private var selectedCaptureIDs: Set<UUID> = []
+
+    private var selectedCaptures: [CaptureItem] {
+        captureMonitor.items.filter { selectedCaptureIDs.contains($0.id) }
+    }
 
     private var captureListMaxHeight: CGFloat {
         guard let screenHeight = NSScreen.main?.visibleFrame.height else { return 720 }
@@ -78,6 +83,7 @@ struct ContentView: View {
                 if !captureMonitor.items.isEmpty {
                     Button {
                         captureMonitor.clear()
+                        selectedCaptureIDs.removeAll()
                     } label: {
                         Label("消去", systemImage: "xmark.circle")
                     }
@@ -86,6 +92,30 @@ struct ContentView: View {
                 }
 
                 Spacer()
+
+                if !selectedCaptureIDs.isEmpty {
+                    Text("\(selectedCaptureIDs.count)選択中")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Button {
+                        captureMonitor.copyToPasteboard(selectedCaptures)
+                    } label: {
+                        Label("コピー", systemImage: "doc.on.doc")
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.blue)
+
+                    Button {
+                        selectedCaptureIDs.removeAll()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .frame(width: 18, height: 18)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .help("選択を解除")
+                }
 
                 Button {
                     NSApp.terminate(nil)
@@ -100,6 +130,9 @@ struct ContentView: View {
             .padding(.bottom, 12)
         }
         .frame(width: 380)
+        .onChange(of: captureMonitor.items.map(\.id)) { _, ids in
+            selectedCaptureIDs.formIntersection(Set(ids))
+        }
     }
 
     private func setCaptureHover(_ hovering: Bool, action: CaptureAction, for item: CaptureItem) {
@@ -145,9 +178,25 @@ struct ContentView: View {
         return Color.white.opacity(0.92)
     }
 
+    private func isCaptureSelected(_ item: CaptureItem) -> Bool {
+        selectedCaptureIDs.contains(item.id)
+    }
+
+    private func toggleCaptureSelection(_ item: CaptureItem) {
+        if selectedCaptureIDs.contains(item.id) {
+            selectedCaptureIDs.remove(item.id)
+        } else {
+            selectedCaptureIDs.insert(item.id)
+        }
+    }
+
+    private func capturesToCopy(triggeredBy item: CaptureItem) -> [CaptureItem] {
+        selectedCaptures.isEmpty ? [item] : selectedCaptures
+    }
+
     private func captureRow(for item: CaptureItem) -> some View {
         HStack(spacing: 10) {
-            previewView(for: item)
+            selectablePreview(for: item)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.kind == .video ? "動画を一時保存中" : "画像をコピー済み")
@@ -163,8 +212,8 @@ struct ContentView: View {
             Spacer()
 
             HStack(spacing: 6) {
-                actionButton(.copy, systemName: "doc.on.doc", help: "クリップボードへコピー", for: item) {
-                    captureMonitor.copyToPasteboard(item)
+                actionButton(.copy, systemName: "doc.on.doc", help: copyHelpText(for: item), for: item) {
+                    captureMonitor.copyToPasteboard(capturesToCopy(triggeredBy: item))
                 }
 
                 actionButton(.save, systemName: "square.and.arrow.down", help: "デスクトップへ保存", for: item) {
@@ -173,11 +222,42 @@ struct ContentView: View {
 
                 actionButton(.delete, systemName: "trash", help: "一覧から削除", for: item) {
                     captureMonitor.remove(item)
+                    selectedCaptureIDs.remove(item.id)
                 }
             }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
+        .background(isCaptureSelected(item) ? Color.blue.opacity(0.06) : Color.clear)
+    }
+
+    private func copyHelpText(for item: CaptureItem) -> String {
+        let count = capturesToCopy(triggeredBy: item).count
+        return count > 1 ? "\(count)件をクリップボードへコピー" : "クリップボードへコピー"
+    }
+
+    private func selectablePreview(for item: CaptureItem) -> some View {
+        Button {
+            toggleCaptureSelection(item)
+        } label: {
+            previewView(for: item)
+                .overlay(alignment: .topLeading) {
+                    Image(systemName: isCaptureSelected(item) ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 17, weight: .semibold))
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(
+                            isCaptureSelected(item) ? Color.white : Color.black.opacity(0.72),
+                            isCaptureSelected(item) ? Color.blue : Color.white.opacity(0.92)
+                        )
+                        .padding(5)
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(isCaptureSelected(item) ? Color.blue : Color.clear, lineWidth: 2)
+                }
+        }
+        .buttonStyle(.plain)
+        .help(isCaptureSelected(item) ? "選択を解除" : "選択")
     }
 
     @ViewBuilder
@@ -294,20 +374,26 @@ final class CaptureMonitor: ObservableObject {
         items.removeAll()
     }
 
-    func copyToPasteboard(_ item: CaptureItem) {
-        let pb = NSPasteboard.general
-        pb.clearContents()
-
-        switch item.kind {
-        case .image:
-            if let image = item.thumbnail {
-                _ = pb.writeObjects([image])
-            }
-        case .video:
-            if let url = item.stagedURL {
-                _ = pb.writeObjects([url as NSURL])
+    func copyToPasteboard(_ items: [CaptureItem]) {
+        let objects: [NSPasteboardWriting] = items.compactMap { item in
+            switch item.kind {
+            case .image:
+                return item.thumbnail
+            case .video:
+                guard let url = item.stagedURL else { return nil }
+                return url as NSURL
             }
         }
+
+        guard !objects.isEmpty else { return }
+
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        _ = pb.writeObjects(objects)
+    }
+
+    func copyToPasteboard(_ item: CaptureItem) {
+        copyToPasteboard([item])
     }
 
     func saveToDesktop(_ item: CaptureItem) {
