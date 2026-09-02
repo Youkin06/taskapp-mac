@@ -79,6 +79,22 @@ struct ContentView: View {
 
             Divider()
 
+            HStack(spacing: 0) {
+                Toggle(isOn: $captureMonitor.keepOriginals) {
+                    Text("元ファイルを残す")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .toggleStyle(.checkbox)
+                .help("オンのあいだは、クリップボードにコピーしたあとも元ファイルを保存先に残します")
+
+                Spacer()
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 7)
+
+            Divider()
+
             HStack {
                 if !captureMonitor.items.isEmpty {
                     Button {
@@ -336,7 +352,17 @@ final class CaptureMonitor: ObservableObject {
         let shouldRemoveSource: Bool
     }
 
+    private static let keepOriginalsKey = "keepOriginalFiles"
+
     @Published var items: [CaptureItem] = []
+
+    /// When on, captures are copied to the clipboard but left in the screenshot
+    /// folder. Off by default, so the existing behaviour is unchanged.
+    @Published var keepOriginals: Bool {
+        didSet {
+            UserDefaults.standard.set(keepOriginals, forKey: Self.keepOriginalsKey)
+        }
+    }
 
     private var processedPaths: Set<String> = []
     private var pendingCaptures: [String: PendingCapture] = [:]
@@ -349,6 +375,8 @@ final class CaptureMonitor: ObservableObject {
         let base = fm.urls(for: .cachesDirectory, in: .userDomainMask).first!
         stagingDirectory = base.appendingPathComponent("ClipShotCaptureStaging", isDirectory: true)
         try? fm.createDirectory(at: stagingDirectory, withIntermediateDirectories: true)
+
+        keepOriginals = UserDefaults.standard.bool(forKey: Self.keepOriginalsKey)
 
         seedExisting()
         start()
@@ -522,7 +550,7 @@ final class CaptureMonitor: ObservableObject {
 
     private func captureHandling(for url: URL, snapshot: CaptureSnapshot) -> CaptureHandling {
         if hasScreenCaptureMetadata(url) || hasCaptureName(url) {
-            return CaptureHandling(shouldTrack: true, shouldRemoveSource: true)
+            return CaptureHandling(shouldTrack: true, shouldRemoveSource: !keepOriginals)
         }
 
         // If the user customized macOS screenshot names, the file may not contain
