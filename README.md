@@ -4,7 +4,7 @@ ClipShot is a small macOS menu bar app that watches for screenshots and screen r
 
 ## 日本語
 
-### [macOS アプリをここからダウンロード！](https://raw.githubusercontent.com/Youkin06/taskapp-mac/main/dist/ClipShot.zip)
+### [macOS アプリをここからダウンロード！](https://github.com/Youkin06/taskapp-mac/raw/refs/heads/main/dist/ClipShot.zip)
 
 ClipShot は、スクリーンショットや画面収録を検知して、自動でクリップボードへコピーする macOS メニューバーアプリです。通常のウィンドウや Dock アイコンを出さず、画面上部のメニューバーから操作できます。
 
@@ -49,7 +49,7 @@ README のダウンロードリンクは `main` ブランチの `dist/ClipShot.z
 
 ## English
 
-### [Download the macOS app here](https://raw.githubusercontent.com/Youkin06/taskapp-mac/main/dist/ClipShot.zip)
+### [Download the macOS app here](https://github.com/Youkin06/taskapp-mac/raw/refs/heads/main/dist/ClipShot.zip)
 
 ClipShot is a macOS menu bar app that detects screenshots and screen recordings, copies them to the clipboard automatically, and stays out of your workspace. It runs from the menu bar without showing a normal app window or Dock icon.
 
