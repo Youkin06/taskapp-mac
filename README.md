@@ -4,7 +4,9 @@ ClipShot is a small macOS menu bar app that watches for screenshots and screen r
 
 ## 日本語
 
-### [macOS アプリをここからダウンロード！](https://github.com/Youkin06/taskapp-mac/raw/refs/heads/main/dist/ClipShot.zip)
+### [macOS アプリの最新版をここからダウンロード！](https://github.com/Youkin06/taskapp-mac/releases/latest/download/ClipShot.zip)
+
+[過去のバージョンを見る](https://github.com/Youkin06/taskapp-mac/releases)
 
 ClipShot は、スクリーンショットや画面収録を検知して、自動でクリップボードへコピーする macOS メニューバーアプリです。通常のウィンドウや Dock アイコンを出さず、画面上部のメニューバーから操作できます。
 
@@ -43,13 +45,16 @@ ClipShot は、スクリーンショットや画面収録を処理したあと�
 git add dist/ClipShot.zip
 git commit -m "chore: update ClipShot download"
 git push
+gh release create v1.0.2 dist/ClipShot.zip --title "ClipShot v1.0.2" --generate-notes
 ```
 
-README のダウンロードリンクは `main` ブランチの `dist/ClipShot.zip` を参照しているため、リンクの書き換えは不要です。
+README のダウンロードリンクは常に最新の GitHub Release を参照するため、リンクの書き換えは不要です。
 
 ## English
 
-### [Download the macOS app here](https://github.com/Youkin06/taskapp-mac/raw/refs/heads/main/dist/ClipShot.zip)
+### [Download the latest macOS app](https://github.com/Youkin06/taskapp-mac/releases/latest/download/ClipShot.zip)
+
+[View previous versions](https://github.com/Youkin06/taskapp-mac/releases)
 
 ClipShot is a macOS menu bar app that detects screenshots and screen recordings, copies them to the clipboard automatically, and stays out of your workspace. It runs from the menu bar without showing a normal app window or Dock icon.
 
@@ -83,4 +88,4 @@ This build is signed for personal development use. Depending on your macOS secur
 
 ### Updating the Distribution Build
 
-Run `./scripts/package-release.sh`, then commit and push `dist/ClipShot.zip`. The README download link always points to that file on the `main` branch, so the link itself does not need to change.
+Run `./scripts/package-release.sh`, commit and push `dist/ClipShot.zip`, then create a GitHub Release with the next version tag. The README download link always points to the latest GitHub Release, so the link itself does not need to change.
