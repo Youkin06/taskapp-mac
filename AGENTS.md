@@ -10,6 +10,16 @@ ClipShot は、スクリーンショットと画面収録を検知してクリ�
 - `scripts/package-release.sh`: Release ビルドして `dist/ClipShot.zip` を作る
 - バージョンは `ClipShot.xcodeproj/project.pbxproj` の `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION`
 
+## クリップボードの仕組み（貼り付け先に合わせて切り替え）
+
+「パスも一緒にコピー」がオンのとき、画像とパス文字列を両方クリップボードに入れると、LINE などのアプリが「テキスト／画像どちらで貼るか」のダイアログを出してしまう。これを避けるため、`CaptureMonitor` は手前のアプリに合わせてクリップボードを書き換える。
+
+- ターミナル・コードエディタ（`pathPasteBundleIDs` に列挙）: 画像＋ファイル URL＋パス文字列（Claude Code はパスから画像を読む）
+- それ以外のアプリ（LINE など）: 画像だけ（動画はファイル URL のみ）
+- ClipShot 自身が手前のときは貼り付け先が不明なのでパス付きで書き、次のアプリが手前に来た時点（`NSWorkspace.didActivateApplicationNotification`）で書き直す
+- クリップボードが ClipShot のコピー内容のまま（`changeCount` が一致）のときだけ書き換える。ユーザーが後から別のものをコピーしたら触らない
+- パスを貼りたいアプリが増えたら `pathPasteBundleIDs` に Bundle ID を追加する（`osascript -e 'id of app "アプリ名"'` で調べられる）
+
 ## ルール: 変更したら必ず最新版を README から配布する
 
 README のダウンロードリンクは GitHub Release の最新版（`releases/latest/download/ClipShot.zip`）を指しています。

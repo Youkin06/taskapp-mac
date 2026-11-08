@@ -96,7 +96,7 @@ struct ContentView: View {
                         .foregroundStyle(.secondary)
                 }
                 .toggleStyle(.checkbox)
-                .help("オンのあいだは、ターミナルや文字だけの入力欄に貼り付けるとファイルのパスが入ります。画像を扱えるアプリには今まで通り画像として貼り付けられます")
+                .help("オンのあいだは、ターミナルやコードエディタに貼り付けるとファイルのパスが入ります。LINE などほかのアプリには画像だけが貼り付けられます")
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 7)
@@ -381,9 +381,9 @@ final class CaptureMonitor: ObservableObject {
         }
     }
 
-    /// When on, the clipboard also carries the staged file and its path as text.
-    /// Image-aware apps still paste the image, while terminals (e.g. Claude Code)
-    /// and text-only fields paste the path. On by default.
+    /// When on, the clipboard also carries the staged file and its path as text
+    /// while a terminal or code editor (e.g. Claude Code) is in front. Other apps
+    /// get the image alone. On by default.
     @Published var copyFilePaths: Bool {
         didSet {
             UserDefaults.standard.set(copyFilePaths, forKey: Self.copyFilePathsKey)
@@ -393,6 +393,10 @@ final class CaptureMonitor: ObservableObject {
     private var processedPaths: Set<String> = []
     private var pendingCaptures: [String: PendingCapture] = [:]
     private var timer: DispatchSourceTimer?
+    private var activationObserver: NSObjectProtocol?
+    private var lastCopiedItems: [CaptureItem] = []
+    private var lastCopyChangeCount = -1
+    private var lastCopyIncludesPaths = false
     private let fm = FileManager.default
     private let stagingDirectory: URL
     private let launchedAt = Date()
@@ -408,10 +412,14 @@ final class CaptureMonitor: ObservableObject {
         removeExpiredStagedFiles()
         seedExisting()
         start()
+        observeAppActivation()
     }
 
     deinit {
         timer?.cancel()
+        if let activationObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(activationObserver)
+        }
     }
 
     func remove(_ item: CaptureItem) {
@@ -431,11 +439,43 @@ final class CaptureMonitor: ObservableObject {
     }
 
     func copyToPasteboard(_ items: [CaptureItem]) {
-        let pasteboardItems = items.compactMap(makePasteboardItem(for:))
+        lastCopiedItems = items
+        writePasteboard(for: NSWorkspace.shared.frontmostApplication)
+    }
+
+    /// Apps that paste the path text. Elsewhere the clipboard carries only the
+    /// image, so chat apps like LINE paste it at once instead of asking
+    /// whether to paste text or image.
+    private static let pathPasteBundleIDs: Set<String> = [
+        "com.apple.Terminal",
+        "com.googlecode.iterm2",
+        "dev.warp.Warp-Stable",
+        "com.mitchellh.ghostty",
+        "org.alacritty",
+        "io.alacritty",
+        "net.kovidgoyal.kitty",
+        "com.github.wez.wezterm",
+        "com.microsoft.VSCode",
+        "com.todesktop.230313mzl4w4u92", // Cursor
+        "com.exafunction.windsurf",
+        "dev.zed.Zed",
+    ]
+
+    private func includesPaths(for app: NSRunningApplication?) -> Bool {
+        guard copyFilePaths else { return false }
+        // While ClipShot itself is in front the target is unknown; the
+        // clipboard is rewritten when the next app becomes active.
+        guard let app, app.processIdentifier != ProcessInfo.processInfo.processIdentifier else { return true }
+        return app.bundleIdentifier.map(Self.pathPasteBundleIDs.contains) ?? false
+    }
+
+    private func writePasteboard(for app: NSRunningApplication?) {
+        let withPaths = includesPaths(for: app)
+        let pasteboardItems = lastCopiedItems.compactMap { makePasteboardItem(for: $0, withPaths: withPaths) }
         guard !pasteboardItems.isEmpty else { return }
 
         // Terminals read only the first item's text, so it carries every path.
-        let paths = copyFilePaths ? items.compactMap { $0.stagedURL?.path } : []
+        let paths = withPaths ? lastCopiedItems.compactMap { $0.stagedURL?.path } : []
         if !paths.isEmpty {
             pasteboardItems[0].setString(paths.joined(separator: " "), forType: .string)
         }
@@ -443,9 +483,31 @@ final class CaptureMonitor: ObservableObject {
         let pb = NSPasteboard.general
         pb.clearContents()
         _ = pb.writeObjects(pasteboardItems)
+        lastCopyChangeCount = pb.changeCount
+        lastCopyIncludesPaths = withPaths
     }
 
-    private func makePasteboardItem(for item: CaptureItem) -> NSPasteboardItem? {
+    private func observeAppActivation() {
+        activationObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] note in
+            let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+            MainActor.assumeIsolated {
+                self?.handleActivation(of: app)
+            }
+        }
+    }
+
+    private func handleActivation(of app: NSRunningApplication?) {
+        // Only touch the clipboard while it still holds what ClipShot copied.
+        guard !lastCopiedItems.isEmpty, NSPasteboard.general.changeCount == lastCopyChangeCount else { return }
+        guard includesPaths(for: app) != lastCopyIncludesPaths else { return }
+        writePasteboard(for: app)
+    }
+
+    private func makePasteboardItem(for item: CaptureItem, withPaths: Bool) -> NSPasteboardItem? {
         let pasteboardItem = NSPasteboardItem()
         var hasContent = false
 
@@ -457,7 +519,7 @@ final class CaptureMonitor: ObservableObject {
             hasContent = true
         }
 
-        if let stagedURL = item.stagedURL, item.kind == .video || copyFilePaths {
+        if let stagedURL = item.stagedURL, item.kind == .video || withPaths {
             pasteboardItem.setString(stagedURL.absoluteString, forType: .fileURL)
             hasContent = true
         }

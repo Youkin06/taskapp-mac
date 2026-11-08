@@ -14,7 +14,7 @@ ClipShot は、スクリーンショットや画面収録を検知して、自�
 
 - スクリーンショットを自動でクリップボードにコピー
 - 画面収録ファイルを一時保存してクリップボードにコピー
-- ターミナル（Claude Code などの CLI）に `Cmd+V` するとファイルのパスが入り、画像を扱えるアプリには今まで通り画像として貼り付け
+- ターミナル（Claude Code などの CLI）やコードエディタに `Cmd+V` するとファイルのパスが入り、LINE などほかのアプリには画像だけを貼り付け（「テキスト／画像」の選択ダイアログが出ない）
 - メニューバーから最近のキャプチャを確認
 - 複数のキャプチャを選択してまとめてコピー
 - コピー、デスクトップへ保存、一覧から削除
@@ -28,7 +28,7 @@ ClipShot は、スクリーンショットや画面収録を検知して、自�
 4. `ClipShot.app` を開きます。
 5. スクリーンショットを撮ると、自動でクリップボードにコピーされます。
 6. メニューバーの一覧でサムネイル左上の丸をクリックすると、複数のキャプチャを選択してまとめてコピーできます。
-7. ターミナルで `Cmd+V` すると、キャプチャのファイルパスが貼り付けられます。Claude Code はパスから画像を読み込んで添付します。複数選択してコピーした場合は、パスがスペース区切りで入ります。パスが不要なら、メニューの「パスも一緒にコピー」をオフにしてください。
+7. ターミナルで `Cmd+V` すると、キャプチャのファイルパスが貼り付けられます。Claude Code はパスから画像を読み込んで添付します。複数選択してコピーした場合は、パスがスペース区切りで入ります。ClipShot は手前に来たアプリに合わせてクリップボードを切り替えるので、LINE などターミナル以外のアプリでは画像だけが一発で貼り付けられます。パスが不要なら、メニューの「パスも一緒にコピー」をオフにしてください。
 
 ### ログイン時に自動起動する
 
@@ -66,7 +66,7 @@ ClipShot is a macOS menu bar app that detects screenshots and screen recordings,
 
 - Automatically copies screenshots to the clipboard
 - Temporarily stages screen recordings and copies them to the clipboard
-- Pastes the file path when you press `Cmd+V` in a terminal (such as Claude Code and other CLIs), while apps that accept images still get the image
+- Pastes the file path when you press `Cmd+V` in a terminal (such as Claude Code and other CLIs) or code editor, while other apps such as LINE get the image alone (no "text or image" prompt)
 - Shows recent captures from the menu bar
 - Selects multiple captures and copies them together
 - Copy, save to Desktop, or remove captures
@@ -80,7 +80,7 @@ ClipShot is a macOS menu bar app that detects screenshots and screen recordings,
 4. Open `ClipShot.app`.
 5. Take a screenshot, and ClipShot will copy it to the clipboard automatically.
 6. In the menu bar list, click the circle on a thumbnail to select multiple captures and copy them together.
-7. Press `Cmd+V` in a terminal to paste the capture's file path. Claude Code reads the image from the path and attaches it. When you copy several captures, their paths are separated by spaces. Turn off "パスも一緒にコピー" (Copy path too) in the menu if you don't want paths.
+7. Press `Cmd+V` in a terminal to paste the capture's file path. Claude Code reads the image from the path and attaches it. When you copy several captures, their paths are separated by spaces. ClipShot switches the clipboard to match the app in front, so apps other than terminals, such as LINE, paste the image in one go. Turn off "パスも一緒にコピー" (Copy path too) in the menu if you don't want paths.
 
 ### Launch at Login
 
