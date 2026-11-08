@@ -18,6 +18,7 @@ ClipShot は、スクリーンショットや画面収録を検知して、自�
 - メニューバーから最近のキャプチャを確認
 - 複数のキャプチャを選択してまとめてコピー
 - コピー、デスクトップへ保存、一覧から削除
+- メニューの左下に、いま使っているバージョンを表示
 - Dock に常駐せず、作業の邪魔になりにくい
 
 ### 使い方
@@ -70,6 +71,7 @@ ClipShot is a macOS menu bar app that detects screenshots and screen recordings,
 - Shows recent captures from the menu bar
 - Selects multiple captures and copies them together
 - Copy, save to Desktop, or remove captures
+- Shows the current version at the bottom left of the menu
 - Runs quietly without a Dock icon
 
 ### How to Use

@@ -38,5 +38,15 @@ gh release create vX.Y.Z dist/ClipShot.zip --title "ClipShot vX.Y.Z" --generate-
 ```
 
 4. `gh release list -L 1` で新しいバージョンが `Latest` になったことを確認する
+5. ユーザーの Mac にインストールされている ClipShot（`/Applications/ClipShot.app`）も新しいバージョンに入れ替えて起動し直す。メニュー左下のバージョン表示、または `Info.plist` の `CFBundleShortVersionString` で新しいバージョンになったことを確認する
+
+```sh
+APP_ID=$(defaults read /Applications/ClipShot.app/Contents/Info.plist CFBundleIdentifier)
+osascript -e "quit app id \"$APP_ID\"" || pkill -f /Applications/ClipShot.app/Contents/MacOS/ClipShot
+TMP=$(mktemp -d) && ditto -x -k dist/ClipShot.zip "$TMP"
+rm -rf /Applications/ClipShot.app && ditto "$TMP/ClipShot.app" /Applications/ClipShot.app
+open /Applications/ClipShot.app
+defaults read /Applications/ClipShot.app/Contents/Info.plist CFBundleShortVersionString
+```
 
 ビルドが失敗した場合は Release を作らず、原因を報告してください。

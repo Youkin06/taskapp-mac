@@ -24,6 +24,11 @@ struct ContentView: View {
         captureMonitor.items.filter { selectedCaptureIDs.contains($0.id) }
     }
 
+    private var appVersionText: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
+        return "v\(version)"
+    }
+
     private var captureListMaxHeight: CGFloat {
         guard let screenHeight = NSScreen.main?.visibleFrame.height else { return 720 }
         return min(720, max(360, screenHeight - 220))
@@ -104,6 +109,11 @@ struct ContentView: View {
             Divider()
 
             HStack {
+                Text(appVersionText)
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .help("ClipShot のバージョン")
+
                 if !captureMonitor.items.isEmpty {
                     Button {
                         captureMonitor.clear()
