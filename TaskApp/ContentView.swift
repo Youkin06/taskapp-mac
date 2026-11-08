@@ -89,6 +89,14 @@ struct ContentView: View {
                 .help("オンのあいだは、クリップボードにコピーしたあとも元ファイルを保存先に残します")
 
                 Spacer()
+
+                Toggle(isOn: $captureMonitor.copyFilePaths) {
+                    Text("パスも一緒にコピー")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .toggleStyle(.checkbox)
+                .help("オンのあいだは、ターミナルや文字だけの入力欄に貼り付けるとファイルのパスが入ります。画像を扱えるアプリには今まで通り画像として貼り付けられます")
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 7)
@@ -353,6 +361,15 @@ final class CaptureMonitor: ObservableObject {
     }
 
     private static let keepOriginalsKey = "keepOriginalFiles"
+    private static let copyFilePathsKey = "copyFilePaths"
+    private static let stagedFileLifetime: TimeInterval = 7 * 24 * 60 * 60
+
+    private static let stagingNameFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyyMMdd-HHmmss"
+        return formatter
+    }()
 
     @Published var items: [CaptureItem] = []
 
@@ -361,6 +378,15 @@ final class CaptureMonitor: ObservableObject {
     @Published var keepOriginals: Bool {
         didSet {
             UserDefaults.standard.set(keepOriginals, forKey: Self.keepOriginalsKey)
+        }
+    }
+
+    /// When on, the clipboard also carries the staged file and its path as text.
+    /// Image-aware apps still paste the image, while terminals (e.g. Claude Code)
+    /// and text-only fields paste the path. On by default.
+    @Published var copyFilePaths: Bool {
+        didSet {
+            UserDefaults.standard.set(copyFilePaths, forKey: Self.copyFilePathsKey)
         }
     }
 
@@ -377,7 +403,9 @@ final class CaptureMonitor: ObservableObject {
         try? fm.createDirectory(at: stagingDirectory, withIntermediateDirectories: true)
 
         keepOriginals = UserDefaults.standard.bool(forKey: Self.keepOriginalsKey)
+        copyFilePaths = UserDefaults.standard.object(forKey: Self.copyFilePathsKey) as? Bool ?? true
 
+        removeExpiredStagedFiles()
         seedExisting()
         start()
     }
@@ -403,21 +431,38 @@ final class CaptureMonitor: ObservableObject {
     }
 
     func copyToPasteboard(_ items: [CaptureItem]) {
-        let objects: [NSPasteboardWriting] = items.compactMap { item in
-            switch item.kind {
-            case .image:
-                return item.thumbnail
-            case .video:
-                guard let url = item.stagedURL else { return nil }
-                return url as NSURL
-            }
-        }
+        let pasteboardItems = items.compactMap(makePasteboardItem(for:))
+        guard !pasteboardItems.isEmpty else { return }
 
-        guard !objects.isEmpty else { return }
+        // Terminals read only the first item's text, so it carries every path.
+        let paths = copyFilePaths ? items.compactMap { $0.stagedURL?.path } : []
+        if !paths.isEmpty {
+            pasteboardItems[0].setString(paths.joined(separator: " "), forType: .string)
+        }
 
         let pb = NSPasteboard.general
         pb.clearContents()
-        _ = pb.writeObjects(objects)
+        _ = pb.writeObjects(pasteboardItems)
+    }
+
+    private func makePasteboardItem(for item: CaptureItem) -> NSPasteboardItem? {
+        let pasteboardItem = NSPasteboardItem()
+        var hasContent = false
+
+        if item.kind == .image, let tiff = item.thumbnail?.tiffRepresentation {
+            if let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) {
+                pasteboardItem.setData(png, forType: .png)
+            }
+            pasteboardItem.setData(tiff, forType: .tiff)
+            hasContent = true
+        }
+
+        if let stagedURL = item.stagedURL, item.kind == .video || copyFilePaths {
+            pasteboardItem.setString(stagedURL.absoluteString, forType: .fileURL)
+            hasContent = true
+        }
+
+        return hasContent ? pasteboardItem : nil
     }
 
     func copyToPasteboard(_ item: CaptureItem) {
@@ -612,20 +657,19 @@ final class CaptureMonitor: ObservableObject {
               let image = NSImage(data: data)
         else { return false }
 
-        let pb = NSPasteboard.general
-        pb.clearContents()
-        _ = pb.writeObjects([image])
+        // Staged so the clipboard can offer a path that outlives the source file.
+        let stagedURL = makeStagingURL(for: url, created: created)
+        let didStage = (try? fm.copyItem(at: url, to: stagedURL)) != nil
 
-        items.insert(
-            CaptureItem(
-                kind: .image,
-                sourcePath: url.path,
-                fileDate: created,
-                thumbnail: image,
-                stagedURL: nil
-            ),
-            at: 0
+        let item = CaptureItem(
+            kind: .image,
+            sourcePath: url.path,
+            fileDate: created,
+            thumbnail: image,
+            stagedURL: didStage ? stagedURL : nil
         )
+        items.insert(item, at: 0)
+        copyToPasteboard(item)
 
         if shouldRemoveSource {
             try? fm.removeItem(at: url)
@@ -634,9 +678,7 @@ final class CaptureMonitor: ObservableObject {
     }
 
     private func processVideo(url: URL, created: Date, shouldRemoveSource: Bool) -> Bool {
-        let stagedURL = stagingDirectory
-            .appendingPathComponent(UUID().uuidString)
-            .appendingPathExtension(url.pathExtension)
+        let stagedURL = makeStagingURL(for: url, created: created)
 
         do {
             try fm.copyItem(at: url, to: stagedURL)
@@ -646,20 +688,15 @@ final class CaptureMonitor: ObservableObject {
 
         let thumbnail = makeVideoThumbnail(from: stagedURL)
 
-        let pb = NSPasteboard.general
-        pb.clearContents()
-        _ = pb.writeObjects([stagedURL as NSURL])
-
-        items.insert(
-            CaptureItem(
-                kind: .video,
-                sourcePath: url.path,
-                fileDate: created,
-                thumbnail: thumbnail,
-                stagedURL: stagedURL
-            ),
-            at: 0
+        let item = CaptureItem(
+            kind: .video,
+            sourcePath: url.path,
+            fileDate: created,
+            thumbnail: thumbnail,
+            stagedURL: stagedURL
         )
+        items.insert(item, at: 0)
+        copyToPasteboard(item)
 
         if shouldRemoveSource {
             try? fm.removeItem(at: url)
@@ -718,6 +755,36 @@ final class CaptureMonitor: ObservableObject {
 
     private func isVideoExt(_ ext: String) -> Bool {
         ["mov", "mp4", "m4v"].contains(ext)
+    }
+
+    /// Names avoid spaces so a pasted path works in a terminal without quoting.
+    private func makeStagingURL(for source: URL, created: Date) -> URL {
+        let ext = source.pathExtension.lowercased()
+        let baseName = "clipshot-\(Self.stagingNameFormatter.string(from: created))"
+        var candidate = stagingDirectory.appendingPathComponent(baseName).appendingPathExtension(ext)
+        var index = 1
+        while fm.fileExists(atPath: candidate.path) {
+            candidate = stagingDirectory.appendingPathComponent("\(baseName)-\(index)").appendingPathExtension(ext)
+            index += 1
+        }
+        return candidate
+    }
+
+    /// Staged files outlive the in-memory list, so old ones are pruned on launch.
+    /// They are kept for a while because pasted paths may still be read later.
+    private func removeExpiredStagedFiles() {
+        guard let urls = try? fm.contentsOfDirectory(
+            at: stagingDirectory,
+            includingPropertiesForKeys: [.contentModificationDateKey]
+        ) else { return }
+
+        let cutoff = Date().addingTimeInterval(-Self.stagedFileLifetime)
+        for url in urls {
+            let modifiedAt = (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
+            if let modifiedAt, modifiedAt < cutoff {
+                try? fm.removeItem(at: url)
+            }
+        }
     }
 
     private func uniqueURL(in directory: URL, baseName: String, ext: String) -> URL {
