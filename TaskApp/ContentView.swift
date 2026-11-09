@@ -465,6 +465,7 @@ final class CaptureMonitor: ObservableObject {
         "io.alacritty",
         "net.kovidgoyal.kitty",
         "com.github.wez.wezterm",
+        "dev.terminal-mac.host", // TerminalMac
         "com.microsoft.VSCode",
         "com.todesktop.230313mzl4w4u92", // Cursor
         "com.exafunction.windsurf",

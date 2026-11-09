@@ -14,7 +14,7 @@ ClipShot は、スクリーンショットや画面収録を検知して、自�
 
 - スクリーンショットを自動でクリップボードにコピー
 - 画面収録ファイルを一時保存してクリップボードにコピー
-- ターミナル（Claude Code などの CLI）やコードエディタに `Cmd+V` するとファイルのパスが入り、LINE などほかのアプリには画像だけを貼り付け（「テキスト／画像」の選択ダイアログが出ない）
+- ターミナル（Terminal、iTerm2、Ghostty、TerminalMac など。Claude Code などの CLI）やコードエディタに `Cmd+V` するとファイルのパスが入り、LINE などほかのアプリには画像だけを貼り付け（「テキスト／画像」の選択ダイアログが出ない）
 - メニューバーから最近のキャプチャを確認
 - 複数のキャプチャを選択してまとめてコピー
 - コピー、デスクトップへ保存、一覧から削除
@@ -67,7 +67,7 @@ ClipShot is a macOS menu bar app that detects screenshots and screen recordings,
 
 - Automatically copies screenshots to the clipboard
 - Temporarily stages screen recordings and copies them to the clipboard
-- Pastes the file path when you press `Cmd+V` in a terminal (such as Claude Code and other CLIs) or code editor, while other apps such as LINE get the image alone (no "text or image" prompt)
+- Pastes the file path when you press `Cmd+V` in a terminal (Terminal, iTerm2, Ghostty, TerminalMac, etc. — for Claude Code and other CLIs) or code editor, while other apps such as LINE get the image alone (no "text or image" prompt)
 - Shows recent captures from the menu bar
 - Selects multiple captures and copies them together
 - Copy, save to Desktop, or remove captures
