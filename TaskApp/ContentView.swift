@@ -29,16 +29,12 @@ struct ContentView: View {
         return "v\(version)"
     }
 
-    private var captureListMaxHeight: CGFloat {
-        guard let screenHeight = NSScreen.main?.visibleFrame.height else { return 720 }
-        return max(360, screenHeight - 140)
-    }
-
     /// The list gets an explicit height: with only a max height the menu
     /// window sometimes sizes the ScrollView to zero and the list vanishes.
+    /// Up to three rows are shown; the rest scroll.
     private var captureListHeight: CGFloat {
         let rowHeight: CGFloat = 77 // 56pt thumbnail + 20pt padding + divider
-        return min(CGFloat(captureMonitor.items.count) * rowHeight, captureListMaxHeight)
+        return CGFloat(min(captureMonitor.items.count, 3)) * rowHeight
     }
 
     var body: some View {
