@@ -34,6 +34,13 @@ struct ContentView: View {
         return min(720, max(360, screenHeight - 220))
     }
 
+    /// The list gets an explicit height: with only a max height the menu
+    /// window sometimes sizes the ScrollView to zero and the list vanishes.
+    private var captureListHeight: CGFloat {
+        let rowHeight: CGFloat = 77 // 56pt thumbnail + 20pt padding + divider
+        return min(CGFloat(captureMonitor.items.count) * rowHeight, captureListMaxHeight)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
@@ -79,7 +86,7 @@ struct ContentView: View {
                         }
                     }
                 }
-                .frame(maxHeight: captureListMaxHeight)
+                .frame(height: captureListHeight)
             }
 
             Divider()
