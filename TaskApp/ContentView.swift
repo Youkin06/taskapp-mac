@@ -31,7 +31,7 @@ struct ContentView: View {
 
     private var captureListMaxHeight: CGFloat {
         guard let screenHeight = NSScreen.main?.visibleFrame.height else { return 720 }
-        return min(720, max(360, screenHeight - 220))
+        return max(360, screenHeight - 140)
     }
 
     /// The list gets an explicit height: with only a max height the menu
