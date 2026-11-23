@@ -294,7 +294,12 @@ struct ContentView: View {
                 }
         }
         .buttonStyle(.plain)
-        .help(isCaptureSelected(item) ? "選択を解除" : "選択")
+        .help(isCaptureSelected(item) ? "選択を解除（ドラッグでほかのアプリへ送れます）" : "選択（ドラッグでほかのアプリへ送れます）")
+        // LINE does not accept pasted videos, so the staged file can be
+        // dragged into a chat instead.
+        .onDrag {
+            item.stagedURL.flatMap { NSItemProvider(contentsOf: $0) } ?? NSItemProvider()
+        }
     }
 
     @ViewBuilder
